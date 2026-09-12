@@ -1,9 +1,10 @@
 const {app,BrowserWindow,Menu}=require('electron');
 const path=require('node:path');
+const dev=process.argv.includes('--dev');
 function create(){
  const win=new BrowserWindow({width:1440,height:900,minWidth:900,minHeight:650,backgroundColor:'#070a0d',title:'最后一次选择',webPreferences:{contextIsolation:true,nodeIntegration:false,sandbox:true}});
  Menu.setApplicationMenu(Menu.buildFromTemplate([{label:app.name,submenu:[{role:'quit'}]},{label:'显示',submenu:[{role:'togglefullscreen',accelerator:'F11'},{role:'reload'},{role:'toggleDevTools'}]}]));
- win.loadFile(path.join(__dirname,'src/index.html'));
+ win.loadFile(path.join(__dirname,'src/index.html'),dev?{query:{dev:'1'}}:{});
  win.webContents.setWindowOpenHandler(()=>({action:'deny'}));
  win.webContents.on('will-navigate',e=>e.preventDefault());
 }
