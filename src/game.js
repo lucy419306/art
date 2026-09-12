@@ -190,7 +190,7 @@ async function question(i) {
   if (a === 'timeout') { a = 'right'; await say(`${id}.auto`); }
   answers.push(a);
   // 选择事件后的同一轮微任务即显示反馈，不等待音效加载。
-  await view(heading('RESPONSE RECORDED', '已记录。'), id);
+  await view(heading('RESPONSE RECORDED', '已记录'), id);
   if (i === 0) {
     await Promise.all([a === 'right' ? sfx('thud') : Promise.resolve(), say(`${id}.${a}`)]);
   } else {
