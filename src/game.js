@@ -187,15 +187,15 @@ async function passed(sid = session) {
   await say('c.ask');
   const a = await choice(['left', 'right'], C.finalTimeout, C.finalPrompt, 'P9C.prompt');
   guard(sid);
-  if (a === 'right') return certificate(sid);
+  if (a === 'right') return certificate(sid, 'C');
   if (a === 'timeout') await say('c.timeout');
   await say('a2.confirm'); await say('a2.stop'); await endingA('A2', sid);
 }
 
-async function certificate(sid = session) {
+async function certificate(sid = session, endingId = 'C') {
   guard(sid);
   certificateState = 'transition';
-  result('C'); await wait(1000);
+  if (endingId === 'C') { result('C'); await wait(1000); }
   document.body.classList.add('ceremony');
   stage.style.setProperty('--fade-ms', `${C.certificate.fade * C.speed}ms`);
   stage.classList.add('ceremony-fade');
@@ -208,7 +208,7 @@ async function certificate(sid = session) {
     <div id="certificate-content"></div>
     <div class="certificate-signatures"><span id="issuer-seal"></span><span id="receiver-seal"></span></div>
     <div id="final-seal"></div>
-  </article>`, 'C');
+  </article>`, endingId);
   const cert = document.querySelector('.certificate');
   const voices = (async () => { await say('c.final'); await pause(); await say('c.handover'); })();
   await wait(280);
@@ -267,7 +267,7 @@ async function certificate(sid = session) {
   await wait(C.longPause); await say('c.luck'); await pause();
   sub.textContent = '';
   stage.insertAdjacentHTML('beforeend', '<p class="certificate-future"><i></i><span>未来结果：无法预测</span><i></i></p>');
-  await finish('C', sid);
+  await finish(endingId, sid);
 }
 
 async function rejected(sid = session) {
@@ -298,7 +298,7 @@ async function endingBCore(sid = session) {
   guard(sid);
   document.body.classList.remove('minimal'); background('evaluation');
   result('B'); await say('b.confirm'); await pause(); await costs('b', false);
-  await say('b.luck'); await finish('B', sid);
+  return certificate(sid, 'B');
 }
 async function contract(sid = session) {
   guard(sid);
