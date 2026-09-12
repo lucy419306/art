@@ -44,7 +44,7 @@ app.whenReady().then(async () => {
     await evaluate("reset(); C.speed = 1; launch(() => endingA('A1'));");
     await until("document.querySelectorAll('.timeline p').length === 3");
     await capture('guidance');
-    assert.equal(await evaluate("getComputedStyle(document.querySelector('.home-scene')).display"), 'block');
+    assert.ok(Number(await evaluate("getComputedStyle(document.querySelector('.warm-layer')).opacity")) > 0.5);
     await evaluate('reset();');
     assert.deepEqual(errors, []);
     console.log('真实渲染验收通过：待机、证书、温馨结尾；输出 ' + output);

@@ -105,6 +105,8 @@ test('C: yellow final choice delivers certificate without another key and resets
 test('A2: white final choice abandons, no certificate', async () => {
   const h = harness(); await questions(h, ['ArrowLeft', 'ArrowLeft', 'ArrowLeft']);
   await reach(h, 'P9C'); await h.key('ArrowLeft'); await h.until(s => s.ending === 'A2');
+  await h.until(() => (h.elements.get('.timeline')?.children || []).length === 3);
+  assert.match(h.elements.get('.timeline').children[0].className, /plan-card/);
   assert.equal(h.ctx.gameStatus().certificateState, null);
 });
 test('A2: final confirmation timeout retains prior 30/90-second fallback', async () => {

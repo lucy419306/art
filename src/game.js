@@ -316,10 +316,13 @@ async function endingA(entry, sid = session, skipEntry = false) {
   ending = entry;
   currentBeat = 'P11.' + entry;
   media.stopBackground();
+  document.body.style.setProperty('--guidance-enter-ms', `${C.guidanceEnter * C.speed}ms`);
+  document.body.style.setProperty('--guidance-close-ms', `${C.guidanceClose * C.speed}ms`);
   document.body.classList.add('guidance');
   document.querySelector('#signature').textContent = '人生指导系统：运行中';
   view(heading('YOUR PERSONAL GUIDANCE', '人生指导系统：运行中') + '<div class="timeline"></div>', 'P11');
-  await sfx('switch'); background('guidance');
+  await Promise.all([sfx('switch', C.guidanceEnter), wait(C.guidanceEnter)]);
+  background('guidance');
   if (!skipEntry) { await say('a.thanks'); await say('a.next'); }
   guard(sid);
   for (const text of [
@@ -327,11 +330,13 @@ async function endingA(entry, sid = session, skipEntry = false) {
     '六年后 · 婚姻：对象由系统配定（匹配度 98.6%）。你将在婚礼前三个月第一次见到对方。',
     '十一年后 · 记忆：进行一次记忆清理。内容你不需要知道。'
   ]) {
-    const p = document.createElement('p'); document.querySelector('.timeline').append(p); type(p, text);
+    const p = document.createElement('p'); p.className = 'plan-card';
+    document.querySelector('.timeline').append(p); type(p, text);
+    p.classList.add('on');
     await wait(Math.max(4000, text.length * 130));
   }
   await say('a.reassure'); await pause(); await say('a.decided');
-  document.body.classList.add('closing'); await wait(3000);
+  document.body.classList.add('closing'); await wait(C.guidanceClose);
   document.body.classList.remove('guidance', 'closing'); document.body.classList.add('minimal');
   view('<p class="tiny">人生指导系统：运行中</p>'); await wait(3000);
   media.stopBackground(); document.body.classList.add('black'); await finish(entry, sid);

@@ -106,29 +106,68 @@
 @keyframes borderLight { from { box-shadow: 0 0 50px #dceecb70, inset 0 0 20px #dceecb40; } to { box-shadow: 0 28px 90px #0008; } }
 .certificate-future { font-size: 10px; letter-spacing: 4px; margin: 12px 0 0; color: #879f94; }
 @keyframes certificateRow { from { opacity: 0; transform: translateY(7px); clip-path: inset(0 0 100% 0); } to { opacity: 1; transform: translateY(0); clip-path: inset(0); } }
-.home-scene { display: none; }
-.guidance { background: #f4e7cf; color: #524832; }
-.guidance:before { background: linear-gradient(115deg, #fff4d9e6 20%, #f6ead8aa 70%, #f6ead877); z-index: 1; }
-.guidance .grain { opacity: .04; z-index: 2; }
+.warm-layer { position: fixed; inset: 0; pointer-events: none; z-index: 1; opacity: 0; transition: opacity var(--guidance-enter-ms, 2.4s) ease; }
+.guidance .warm-layer { opacity: 1; }
+.guidance .grain { z-index: 2; opacity: .1; }
 .guidance .frame { z-index: 3; }
-.guidance .home-scene { display: block; position: fixed; inset: 0; overflow: hidden; background: linear-gradient(135deg, #fff1c9, #d5ddc1 60%, #e6c8a4); }
-.home-window { position: absolute; right: 3%; top: 8%; width: 38%; height: 70%; border: 20px solid #fff9e4; box-shadow: 0 14px 60px #8c785344; background: linear-gradient(#bad9d4, #fff0ba); }
-.home-window:before { content: ''; position: absolute; left: 48%; height: 100%; width: 9px; background: #fff9e4; }
-.home-window:after { content: ''; position: absolute; top: 50%; width: 100%; height: 9px; background: #fff9e4; }
-.home-sun { position: absolute; top: 17%; right: 12%; width: 100px; height: 100px; background: #fff9cb; border-radius: 50%; box-shadow: 0 0 110px 45px #fff3b7; }
-.home-curtain { position: absolute; right: 0; top: 0; width: 10%; height: 100%; background: repeating-linear-gradient(90deg, #f4ead78c, #d1bca48c 24px, #fff4dfc0 48px); z-index: 1; }
-.home-hill { position: absolute; right: 9%; top: 57%; width: 30%; height: 28%; border-radius: 90% 90% 0 0; background: #94a878; }
-.home-table { position: absolute; bottom: 0; right: 0; width: 43%; height: 15%; background: linear-gradient(#b8986b, #e6c99d); transform: skewY(-6deg); }
-.home-vase { position: absolute; bottom: 14%; right: 18%; width: 62px; height: 110px; border-radius: 10px 10px 35px 35px; background: #ead5b5; box-shadow: inset -15px 0 20px #9e886844; }
-.home-vase:before { content: ''; position: absolute; width: 95px; height: 130px; bottom: 85px; left: -25px; background: #81916a; border-radius: 0 90% 0 90%; transform: rotate(-15deg); }
-.guidance h1 { color: #665435; }
-.guidance p, .guidance #subtitle { color: #6b604b; }
-.guidance .eyebrow, .guidance header, .guidance .rail { color: #978462; }
-.guidance header, .guidance footer { border-color: #ac977b50; }
-.guidance .timeline { background: #fffaf0aa; border: 1px solid #e2cfaf; border-radius: 12px; padding: 0 28px; box-shadow: 0 20px 70px #a0825130; }
-.guidance .timeline p { border-color: #d9c6a6; }
-.guidance .timeline p:first-child { border-top: 0; }
-.closing .frame, .closing .home-scene, .closing:before { animation: fadeOut 3s forwards; }
+.guidance { background: #0a0806; color: #efe6d6; }
+.guidance:before { background: radial-gradient(ellipse at 50% 46%, #3a2a1840, transparent 62%); z-index: 0; }
+.guidance header, .guidance footer { border-color: #6a543850; }
+.guidance header i { background: var(--warm); box-shadow: 0 0 12px #e1bb7b88; }
+.guidance h1 { color: #f0e2c4; }
+.guidance p, .guidance #subtitle { color: #d8c8a8; }
+.guidance .eyebrow, .guidance header, .guidance .rail, .guidance footer { color: #b9a17a; }
+.warm-wash {
+  position: absolute; inset: -20%;
+  background: linear-gradient(125deg, #c48a4a40 0%, #6a3d2455 46%, #2a1812a6 100%);
+  background-size: 180% 180%;
+  animation: warmDrift 24s ease-in-out infinite alternate;
+}
+.warm-glow {
+  position: absolute; width: 46vw; height: 46vw; border-radius: 50%;
+  background: radial-gradient(circle, #d4a05a3d 0%, transparent 72%);
+}
+.warm-glow.g1 { left: 2%; top: 8%; animation: glowDriftA 22s ease-in-out infinite alternate; }
+.warm-glow.g2 { right: 0; top: 32%; animation: glowDriftB 26s ease-in-out infinite alternate; }
+.warm-glow.g3 { left: 28%; bottom: -8%; width: 38vw; height: 38vw; animation: glowDriftC 24s ease-in-out infinite alternate; }
+.warm-dust, .warm-dust:after {
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(1.5px 1.5px at 12% 88%, #e8c88855 40%, transparent 70%),
+    radial-gradient(1px 1px at 28% 72%, #e8c88840 40%, transparent 70%),
+    radial-gradient(1.5px 1.5px at 47% 90%, #e8c8884d 40%, transparent 70%),
+    radial-gradient(1px 1px at 63% 78%, #e8c88838 40%, transparent 70%),
+    radial-gradient(1.5px 1.5px at 81% 86%, #e8c88844 40%, transparent 70%),
+    radial-gradient(1px 1px at 8% 60%, #e8c88830 40%, transparent 70%),
+    radial-gradient(1px 1px at 71% 64%, #e8c88836 40%, transparent 70%),
+    radial-gradient(1.5px 1.5px at 91% 70%, #e8c88840 40%, transparent 70%);
+  animation: dustRise 28s linear infinite;
+}
+.warm-dust:after { content: ''; animation-delay: -14s; opacity: .7; }
+.warm-ember {
+  position: absolute; left: 50%; top: 50%; width: 7px; height: 7px; margin: -3px 0 0 -3px;
+  border-radius: 50%; background: #f0d08a; box-shadow: 0 0 16px 7px #e8b45a55; opacity: 0;
+}
+.guidance .timeline { background: none; border: 0; box-shadow: none; padding: 0; width: min(880px, 100%); display: flex; flex-direction: column; gap: 14px; }
+.guidance .plan-card {
+  margin: 0; padding: 18px 24px; text-align: left; font-size: 17px; border: 1px solid #c9a05a33;
+  box-shadow: 0 0 0 transparent; opacity: .28; transition: opacity .8s ease, box-shadow .8s ease, border-color .8s ease;
+}
+.guidance .plan-card.on { opacity: 1; border-color: #e0c07a80; box-shadow: 0 0 24px #e0c07a24; }
+.closing .warm-layer { transition: opacity var(--guidance-close-ms, 2.4s) ease; }
+.closing .warm-wash { animation: washOut var(--guidance-close-ms, 2.4s) ease forwards; }
+.closing .warm-glow { animation: glowToPoint var(--guidance-close-ms, 2.4s) ease forwards; }
+.closing .warm-dust, .closing .warm-dust:after { opacity: 0; animation: none; }
+.closing .warm-ember { animation: emberPulse var(--guidance-close-ms, 2.4s) ease forwards; }
+.closing .frame { animation: fadeOut var(--guidance-close-ms, 2.4s) forwards; }
+@keyframes warmDrift { to { background-position: 80% 30%; } }
+@keyframes glowDriftA { to { transform: translate(7%, 10%); } }
+@keyframes glowDriftB { to { transform: translate(-8%, 6%); } }
+@keyframes glowDriftC { to { transform: translate(5%, -8%); } }
+@keyframes dustRise { to { transform: translateY(-110%); } }
+@keyframes washOut { to { opacity: 0; } }
+@keyframes glowToPoint { to { left: 50%; top: 50%; width: 10px; height: 10px; margin: 0; transform: translate(-50%, -50%); opacity: .2; } }
+@keyframes emberPulse { 0% { opacity: 0; transform: scale(.2); } 40% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.12); } }
 @media (max-height: 780px) {
   .certificate { padding: 18px 28px 55px; min-height: 460px; }
   .certificate p { font-size: 11px; line-height: 1.6; margin: 7px 0; }

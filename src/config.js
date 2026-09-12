@@ -6,6 +6,7 @@ window.GAME_CONFIG = {
   finalPrompt: 30000, finalTimeout: 90000,
   rejectionTimeout: 15000, hesitationTimeout: 5000, hesitationAnswerTimeout: 15000,
   resetTimeout: 90000, mediaLoadTimeout: 10000, mediaStallTimeout: 15000,
+  guidanceEnter: 2400, guidanceClose: 2400,
   certificate: { fade: 1800, border: 2200, section: 1800, sign: 1000, light: 1400, stamp: 1600 },
   assets: { voice: {}, sfx: {}, bgm: {}, video: {} }
 };
