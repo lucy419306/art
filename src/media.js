@@ -116,6 +116,16 @@ class GameMedia {
         if (this.inventory.has(p)) return p;
       }
     }
+    if (kind === 'sfx' && (id === 'p9r.override' || id === 'p9r_override' || id === 'p9r' || id === 'P9R 强制驳回')) {
+      for (const p of ['../assets/sfx/P9R 强制驳回.mp3', '../assets/sfx/p9r 强制驳回.mp3', '../assets/sfx/p9r.mp3']) {
+        if (this.inventory.has(p)) return p;
+      }
+    }
+    if (kind === 'sfx' && (id === 'key.red' || id === 'red.key' || id === 'key_red' || id === 'p9r.button' || id === 'P9R 强制驳回红色按钮')) {
+      for (const p of ['../assets/sfx/P9R 强制驳回红色按钮.mp3', '../assets/sfx/p9r 强制驳回红色按钮.mp3', '../assets/sfx/红键.mp3']) {
+        if (this.inventory.has(p)) return p;
+      }
+    }
     return null;
   }
   _arm(job) {
@@ -203,10 +213,11 @@ class GameMedia {
     if (signal.aborted) throw new Error('reset');
     const path = this.path(kind, id);
     if (!path) { onFallback?.(); return this.delay(fallback, signal); }
+    const baseVolume = kind === 'voice' ? (this.config.voiceVolume ?? 0.7) * volume : volume;
     const completed = await new Promise((resolve, reject) => {
       const audio = new Audio(path);
       audio.playbackRate = 1;
-      if (typeof volume === 'number') audio.volume = volume;
+      if (typeof baseVolume === 'number') audio.volume = Math.max(0, Math.min(1, baseVolume));
       this.playing.add(audio);
       let done = false, watchdog, duration = null, started = false;
       const clean = () => {

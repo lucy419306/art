@@ -114,6 +114,9 @@ GAME_ASSETS.sfx['b.think'] = '../assets/sfx/B think.mp3';
 GAME_ASSETS.sfx['c.1st'] = '../assets/sfx/C 1st.mp3';
 GAME_ASSETS.sfx['c.2nd'] = '../assets/sfx/C 2nd.mp3';
 GAME_ASSETS.sfx['p11.a'] = '../assets/sfx/P11 A.mp3';
+GAME_ASSETS.sfx['p9r.override'] = '../assets/sfx/P9R 强制驳回.mp3';
+GAME_ASSETS.sfx['key.red'] = '../assets/sfx/P9R 强制驳回红色按钮.mp3';
+GAME_ASSETS.sfx['p9r.button'] = '../assets/sfx/P9R 强制驳回红色按钮.mp3';
 
 for (const id of ['evaluation', 'guidance', 'certificate']) GAME_ASSETS.bgm[id] = `../assets/bgm/${id}.mp3`;
 GAME_ASSETS.bgm['guidance'] = '../assets/sfx/P11 A.mp3';

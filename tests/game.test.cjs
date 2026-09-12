@@ -852,7 +852,7 @@ test('ending B plays B think sfx when the central point/orb appears', async () =
   assert.equal(thinkAudio.loop, undefined, 'B think sfx must play as non-loop sfx');
 });
 
-test('ending C plays C 1st sfx when entering ending C', async () => {
+test('ending C plays C 1st sfx when c.final starts speaking and voices are at 70% volume', async () => {
   const c1stAudio = '../assets/sfx/C 1st.mp3';
   const audioFiles = {
     [c1stAudio]: 27048,
@@ -865,14 +865,22 @@ test('ending C plays C 1st sfx when entering ending C', async () => {
 
   // 直接触发结局 C
   h.ctx.enterBeat('C');
+  // 刚进入转场展示评估结果阶段时，c.1st 尚未播放
+  assert.equal(h.audios.some(a => a.path === c1stAudio), false, 'C 1st sfx should not play during transition/result display');
+
+  // 等待“最终确认完成。”（c.final）开始讲
   await h.until(() => h.audios.some(a => a.path === c1stAudio));
 
   const c1st = h.audios.find(a => a.path === c1stAudio);
-  assert.ok(c1st && !c1st.paused, 'C 1st sfx must play when entering ending C');
+  assert.ok(c1st && !c1st.paused, 'C 1st sfx must play when c.final starts speaking');
   assert.equal(c1st.loop, undefined, 'C 1st sfx must play as non-loop sfx');
+
+  const cFinalVoice = h.audios.find(a => a.path === voice('c.final'));
+  assert.ok(cFinalVoice, 'c.final voice audio should exist');
+  assert.equal(Math.round(cFinalVoice.volume * 100) / 100, 0.7, 'Voice volume must be reduced by 30% to 0.7');
 });
 
-test('ending C plays C 2nd sfx when sealing the certificate', async () => {
+test('ending C plays C 2nd sfx 1 second before sealing the certificate', async () => {
   const c2ndAudio = '../assets/sfx/C 2nd.mp3';
   const audioFiles = {
     [c2ndAudio]: 28056,
@@ -893,12 +901,119 @@ test('ending C plays C 2nd sfx when sealing the certificate', async () => {
   // 按任意键接受证书
   await h.key('Space');
 
-  // 等待盖章落印并验证触发了 C 2nd.mp3
+  // 等待触发 C 2nd.mp3
   await h.until(() => h.audios.some(a => a.path === c2ndAudio));
 
   const c2nd = h.audios.find(a => a.path === c2ndAudio);
-  assert.ok(c2nd && !c2nd.paused, 'C 2nd sfx must play when sealing certificate in ending C');
+  assert.ok(c2nd && !c2nd.paused, 'C 2nd sfx must start playing before seal is complete');
   assert.equal(c2nd.loop, undefined, 'C 2nd sfx must play as non-loop sfx');
+
+  // 此时处于盖印前倒计时阶段（状态仍为 signing，尚未 complete）
+  assert.equal(h.ctx.gameStatus().certificateState, 'signing', 'C 2nd sfx must start before certificateState becomes complete');
+
+  // 步进直至印章彻底盖定（1秒后完成）
+  await h.until(s => s.certificateState === 'complete');
+  assert.equal(h.ctx.gameStatus().certificateState, 'complete', 'certificate state completes after stamp lead time');
+});
+
+test('P9R plays override sfx 0.1s before countdown bar appears and red button sfx when overriding', async () => {
+  const p9rOverrideAudio = '../assets/sfx/P9R 强制驳回.mp3';
+  const p9rRedButtonAudio = '../assets/sfx/P9R 强制驳回红色按钮.mp3';
+  const audioFiles = {
+    [p9rOverrideAudio]: 18048,
+    [p9rRedButtonAudio]: 1344,
+    [voice('r.sorry')]: 100,
+    [voice('r.unfit')]: 100,
+    [voice('r.common')]: 100,
+    [voice('r.reject')]: 100,
+    [voice('r.override')]: 100,
+    [voice('b.detect')]: 100,
+    [voice('b.risk')]: 100,
+    [voice('b.accept')]: 100
+  };
+
+  const h = harness(audioFiles);
+  await h.flush();
+
+  h.ctx.enterBeat('P9R');
+
+  // 等待播放到 P9R 强制驳回.mp3
+  await h.until(() => h.audios.some(a => a.path === p9rOverrideAudio));
+  const overrideAudio = h.audios.find(a => a.path === p9rOverrideAudio);
+  assert.ok(overrideAudio && !overrideAudio.paused, 'P9R override sfx must play');
+
+  // 此时刚好处于 0.1s 前，倒计时进度条尚未挂载到 DOM
+  assert.equal(h.elements.has('#countdown'), false, 'Countdown element must not appear immediately before 0.1s gap');
+
+  // 步进直至倒计时进度条出来并且处于 waiting 状态
+  await h.until(s => s.waiting && h.elements.has('#countdown'));
+  assert.ok(h.elements.has('#countdown'), 'Countdown element should appear after 0.1s lead');
+
+  // 按红色按钮进行强制驳回
+  await h.key('Space');
+
+  // 验证触发了 P9R 强制驳回红色按钮.mp3
+  await h.until(() => h.audios.some(a => a.path === p9rRedButtonAudio));
+  const redAudio = h.audios.find(a => a.path === p9rRedButtonAudio);
+  assert.ok(redAudio && !redAudio.paused, 'P9R red button sfx must play when pressing red key');
+  assert.equal(redAudio.loop, undefined, 'Red button sfx must be non-loop');
+});
+
+test('ending B plays same audio as ending C across certificate ceremony', async () => {
+  const c1stAudio = '../assets/sfx/C 1st.mp3';
+  const c2ndAudio = '../assets/sfx/C 2nd.mp3';
+  const bThinkAudio = '../assets/sfx/B think.mp3';
+  const audioFiles = {
+    [c1stAudio]: 27048,
+    [c2ndAudio]: 28056,
+    [bThinkAudio]: 3432,
+    [voice('b.promise')]: 100,
+    [voice('b.confirm')]: 100,
+    [voice('b.luck')]: 100,
+    [voice('b.errors')]: 100,
+    [voice('b.pain')]: 100,
+    [voice('b.optimal')]: 100,
+    [voice('c.final')]: 100,
+    [voice('c.handover')]: 100,
+    [voice('c.complete')]: 100,
+    [voice('c.yours')]: 100,
+    [voice('c.luck')]: 100
+  };
+
+  const h = harness(audioFiles);
+  await h.flush();
+
+  h.ctx.enterBeat('B');
+
+  // 等待进入证书仪式并展开证书，播放 c.1st 及 c.final
+  await h.until(() => h.audios.some(a => a.path === c1stAudio));
+  const c1st = h.audios.find(a => a.path === c1stAudio);
+  assert.ok(c1st && !c1st.paused, 'C 1st sfx must play in ending B certificate');
+
+  const cFinal = h.audios.find(a => a.path === voice('c.final'));
+  assert.ok(cFinal, 'c.final voice must play in ending B certificate');
+
+  // 等待证书进入 awaiting 状态
+  await h.until(s => s.certificateState === 'awaiting');
+
+  // 按任意键接受收回确认书
+  await h.key('Space');
+
+  // 盖印前 1 秒播放 C 2nd
+  await h.until(() => h.audios.some(a => a.path === c2ndAudio));
+  const c2nd = h.audios.find(a => a.path === c2ndAudio);
+  assert.ok(c2nd && !c2nd.paused, 'C 2nd sfx must play before sealing certificate in ending B');
+
+  // 印章盖定后播放 c.complete, c.yours, c.luck
+  await h.until(s => s.certificateState === 'complete');
+  await h.until(() => h.audios.some(a => a.path === voice('c.complete')));
+  assert.ok(h.audios.some(a => a.path === voice('c.complete')), 'c.complete must play after sealing in ending B');
+
+  await h.until(() => h.audios.some(a => a.path === voice('c.yours')));
+  assert.ok(h.audios.some(a => a.path === voice('c.yours')), 'c.yours must play after sealing in ending B');
+
+  await h.until(() => h.audios.some(a => a.path === voice('c.luck')));
+  assert.ok(h.audios.some(a => a.path === voice('c.luck')), 'c.luck must play after sealing in ending B');
 });
 
 

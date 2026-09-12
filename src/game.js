@@ -114,7 +114,9 @@ function choice(valid, timeout, promptAt, promptId) {
             ? (media.path('sfx', 'key.white') ? 'key.white' : 'beep')
             : (key === 'right'
               ? (media.path('sfx', 'key.yellow') ? 'key.yellow' : 'beep')
-              : 'beep'));
+              : (key === 'third'
+                ? (media.path('sfx', 'key.red') ? 'key.red' : (media.path('sfx', 'p9r.button') ? 'p9r.button' : 'beep'))
+                : 'beep')));
         sfx(sfxId).catch(ignoreReset);
         finish(key);
       }
@@ -315,7 +317,6 @@ async function certificate(sid = session, endingId = 'C') {
   guard(sid);
   certificateState = 'transition';
   if (endingId === 'C') {
-    sfx('c.1st').catch(e => { if (e.message !== 'reset') console.error(e); });
     await result('C');
     await wait(1000);
   }
@@ -333,8 +334,13 @@ async function certificate(sid = session, endingId = 'C') {
     <div id="final-seal"></div>
   </article>`, endingId, true);
   const cert = document.querySelector('.certificate');
-  const voices = endingId === 'C'
-    ? (async () => { await say('c.final'); await pause(); await say('c.handover'); })()
+  const voices = (endingId === 'C' || endingId === 'B')
+    ? (async () => {
+        sfx('c.1st').catch(e => { if (e.message !== 'reset') console.error(e); });
+        await say('c.final');
+        await pause();
+        await say('c.handover');
+      })()
     : Promise.resolve();
   await wait(280);
   cert?.classList.add('unfold');
@@ -390,15 +396,18 @@ async function certificate(sid = session, endingId = 'C') {
   seal.innerHTML = endingId === 'B' ? '<span>自主决策权</span><strong>已收回</strong>' : '<span>自主决策权</span><strong>已交接</strong>';
   seal.style.setProperty('--stamp-ms', `${C.certificate.stamp * C.speed}ms`);
   seal.classList.add('stamping');
-  await wait(C.certificate.stamp);
+  const stampLead = Math.min(1000, C.certificate.stamp);
+  const stampPre = Math.max(0, C.certificate.stamp - stampLead);
+  if (stampPre > 0) await wait(stampPre);
+  if (endingId === 'C' || endingId === 'B') {
+    sfx('c.2nd').catch(e => { if (e.message !== 'reset') console.error(e); });
+  }
+  await wait(stampLead);
   cert?.classList.add('sealed');
   document.querySelector('#certificate-status').textContent = endingId === 'B' ? '收回完成' : '交接完成';
   certificateState = 'complete';
-  if (endingId === 'C') {
-    sfx('c.2nd').catch(e => { if (e.message !== 'reset') console.error(e); });
-  }
   await sfx('stamp');
-  if (endingId === 'C') {
+  if (endingId === 'C' || endingId === 'B') {
     await say('c.complete'); await pause(); await say('c.yours');
     await wait(C.luckPause); await say('c.luck'); await pause();
   }
@@ -413,6 +422,8 @@ async function rejected(sid = session) {
   await view(heading('ASSESSMENT REPORT / 07', '申请已驳回') + '<table class="report"><tr><td>自主决策风险</td><td>高</td></tr><tr><td>后悔耐受度</td><td>低</td></tr><tr><td>情绪波动</td><td>高</td></tr><tr><td>决策效率</td><td>43%</td></tr></table>', 'P9R');
   await say('r.sorry'); await say('r.unfit'); await pause();
   await say('r.common'); await pause(); await say('r.reject'); await pause(); await say('r.override');
+  sfx('p9r.override').catch(e => { if (e.message !== 'reset') console.error(e); });
+  await wait(100);
   await view('<div class="p9r-choice"><h1 class="p9r-lead"><strong>若想强制拥有决策权</strong><span>可按下红键</span></h1><div class="override-meter"><div class="override-meter-label">请做出抉择</div><div class="countdown-track"><div id="countdown"></div></div></div></div>');
   redVisible = true;
   keys(['third']);
