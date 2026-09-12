@@ -94,7 +94,9 @@ GAME_ASSETS.bgm['p2.loop'] = '../assets/sfx/P2 背景声loop.mp3';
 GAME_ASSETS.sfx['p2.ending'] = '../assets/sfx/P2 背景声ending.mp3';
 GAME_ASSETS.sfx['p2_3.intro'] = '../assets/sfx/P3-4 用户你好背景声intro.mp3';
 GAME_ASSETS.sfx['p3_4.intro'] = '../assets/sfx/P3-4 用户你好背景声intro.mp3';
-GAME_ASSETS.sfx['p3.loading'] = '../assets/sfx/P3-4 Loading.mp3';
+for (let i = 0; i < 8; i++) {
+  GAME_ASSETS.sfx[`p3.line${i + 1}`] = `../assets/sfx/p3-loading/line-${String(i).padStart(2, '0')}.mp3`;
+}
 GAME_ASSETS.bgm['p3_4.loop'] = '../assets/sfx/P3-4 背景声loop.mp3';
 GAME_ASSETS.sfx['p3_4.ending'] = '../assets/sfx/P3-4 背景声ending.mp3';
 GAME_ASSETS.sfx['p4_6.intro'] = '../assets/sfx/P4-6 背景声intro.mp3';

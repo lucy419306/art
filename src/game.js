@@ -179,8 +179,6 @@ async function sceneP2(sid) {
   await wait(1000);
   guard(sid);
   await say('p2.welcome');
-  guard(sid);
-  sfx('p3.loading').catch(e => { if (e.message !== 'reset') console.error(e); });
 }
 async function sceneP4(sid) {
   guard(sid);
@@ -229,12 +227,24 @@ async function history() {
   if (!devMuted && !media.background && (media.path('sfx', 'p3_4.loop') || media.path('bgm', 'p3_4.loop'))) {
     media.playChain({ loop: 'p3_4.loop', volume: 0.25 }, run.signal);
   }
-  for (const text of ['教育路径选择', '职业选择', '居住地选择', '健康决策', '社交关系优化', '伴侣匹配', '消费选择', '累计替代决策：11,204 次']) {
+  const lines = ['教育路径选择', '职业选择', '居住地选择', '健康决策', '社交关系优化', '伴侣匹配', '消费选择', '累计替代决策：11,204 次'];
+  for (const [i, text] of lines.entries()) {
     const p = document.createElement('p');
     if (text.startsWith('累计')) p.className = 'total';
-    document.querySelector('.data').append(p); type(p, text);
-    // 数据逐字出现时不叠加提示音，避免固定长度音效与文字节奏错位。
-    await wait(Math.max(650, text.length * C.typeMs));
+    document.querySelector('.data').append(p);
+    // 原 Loading 音轨由八个 1.008 秒单元组成；逐行绑定，声音和该行文字同时开始。
+    const fallbackMs = Math.max(650, text.length * C.typeMs);
+    if (devMuted) {
+      type(p, text);
+      await wait(fallbackMs);
+    } else {
+      let shown = false;
+      const reveal = () => { if (!shown) { shown = true; type(p, text); } };
+      await media.play('sfx', `p3.line${i + 1}`, fallbackMs, run.signal, {
+        onStart: reveal,
+        onFallback: reveal
+      });
+    }
   }
   await say('p3.count'); await pause(); await say('p3.perfect');
   await wait(C.pageTransitionPause);

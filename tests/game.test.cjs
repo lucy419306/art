@@ -354,13 +354,12 @@ test('P0 standby loops across P1 and stops upon reaching P2; P1 start sfx plays'
   assert.equal(standbyAudio.paused, true, 'standby audio must stop once P2 starts');
 });
 
-test('P2 audio chain: intro -> loop, 7 card beeps, ending & P2-3 intro paired before welcome, loading 1.25s later', async () => {
+test('P2 audio chain: intro -> loop, 7 card beeps, ending & P2-3 intro paired before welcome', async () => {
   const p2Intro = '../assets/sfx/P2 背景声intro.mp3';
   const p2Loop = '../assets/sfx/P2 背景声loop.mp3';
   const p2Ending = '../assets/sfx/P2 背景声ending.mp3';
   const p3_4Intro = '../assets/sfx/P3-4 用户你好背景声intro.mp3';
   const p3_4Loop = '../assets/sfx/P3-4 背景声loop.mp3';
-  const p3Loading = '../assets/sfx/P3-4 Loading.mp3';
   const beepPath = '../assets/sfx/P2 七张档案卡.mp3';
 
   const audioFiles = {
@@ -371,7 +370,6 @@ test('P2 audio chain: intro -> loop, 7 card beeps, ending & P2-3 intro paired be
     [p2Ending]: 4320,
     [p3_4Intro]: 4320,
     [p3_4Loop]: 15000,
-    [p3Loading]: 8060,
     [beepPath]: 2090
   };
   for (let i = 1; i <= 7; i++) audioFiles[voice(`p2.card${i}`)] = 500;
@@ -411,17 +409,13 @@ test('P2 audio chain: intro -> loop, 7 card beeps, ending & P2-3 intro paired be
   await h.until(() => h.audios.some(a => a.path === p3_4Loop && !a.paused));
   const p3_4LoopAudio = h.audios.find(a => a.path === p3_4Loop);
   assert.ok(p3_4LoopAudio && !p3_4LoopAudio.paused, 'P3-4 loop must play after P3-4 intro ends');
-
-  // 台词 p2.welcome 念完“测试阶段”后，触发 P3-4 Loading 音效，此时底下的 P3-4 loop 正在播放
-  await h.until(() => h.audios.some(a => a.path === p3Loading));
-  const loadingAudio = h.audios.find(a => a.path === p3Loading);
-  assert.ok(loadingAudio && !loadingAudio.paused, 'P3-4 loading sfx should play after welcome finishes');
-  assert.equal(p3_4LoopAudio.paused, false, 'P3-4 loop is playing concurrently with Loading');
+  assert.equal(h.audios.some(a => a.path.includes('/p3-loading/')), false, 'P3 line audio must not start early during welcome');
 });
 
-test('P3 history typing stays free of mismatched beeps; valid button press still triggers feedback', async () => {
+test('P3 binds one 1.008-second audio segment to each appearing line; valid button still triggers feedback', async () => {
   const beepPath = '../assets/sfx/P2 七张档案卡.mp3';
   const p3_4Loop = '../assets/sfx/P3-4 背景声loop.mp3';
+  const linePaths = Array.from({ length: 8 }, (_, i) => `../assets/sfx/p3-loading/line-${String(i).padStart(2, '0')}.mp3`);
   const audioFiles = {
     [beepPath]: 500,
     [p3_4Loop]: 10000,
@@ -435,6 +429,7 @@ test('P3 history typing stays free of mismatched beeps; valid button press still
     [voice('P5.intro')]: 200,
     [voice('P5.choose')]: 200
   };
+  for (const path of linePaths) audioFiles[path] = 1008;
   for (let i = 1; i <= 7; i++) audioFiles[voice(`p2.card${i}`)] = 200;
 
   const h = harness(audioFiles);
@@ -446,10 +441,15 @@ test('P3 history typing stays free of mismatched beeps; valid button press still
   assert.ok(loopAudio && !loopAudio.paused, 'P3-4 loop audio should play during history');
 
   const beepsBeforeHistory = h.audios.filter(a => a.path === beepPath).length;
-  // 八行数据（包括累计行）均不播放固定长度提示音，避免与逐字速度错位。
-  await h.until(() => h.elements.get('.data').children.length === 8);
+  for (let n = 1; n <= 8; n++) {
+    await h.until(() => h.elements.get('.data').children.length === n);
+    const started = h.audios.filter(a => linePaths.includes(a.path));
+    assert.equal(started.length, n, `History line ${n} must start exactly one matching audio segment`);
+    assert.equal(started[n - 1].path, linePaths[n - 1]);
+    assert.equal(started[n - 1].paused, false, `History line ${n} audio must begin with its text`);
+  }
   const beepsAfter8thLine = h.audios.filter(a => a.path === beepPath).length;
-  assert.equal(beepsAfter8thLine, beepsBeforeHistory, 'History data lines must produce no beep');
+  assert.equal(beepsAfter8thLine, beepsBeforeHistory, 'History line audio must not fall back to the archive beep');
 
   // 到达第一题等待用户按键阶段
   await reach(h, 'P5');
@@ -1018,5 +1018,4 @@ test('ending B plays same audio as ending C across certificate ceremony', async 
   await h.until(() => h.audios.some(a => a.path === voice('c.luck')));
   assert.ok(h.audios.some(a => a.path === voice('c.luck')), 'c.luck must play after sealing in ending B');
 });
-
 
