@@ -6,7 +6,8 @@ window.GAME_CONFIG = {
   finalPrompt: 30000, finalTimeout: 90000,
   rejectionTimeout: 15000, hesitationTimeout: 5000, hesitationAnswerTimeout: 15000,
   resetTimeout: 30000, mediaLoadTimeout: 10000, mediaStallTimeout: 15000,
-  guidanceEnter: 2400, guidanceClose: 2400,
+  guidanceEnter: 2400, guidanceClose: 2400, guidanceLock: 10000, guidanceLockFade: 2400,
+  sceneFade: 280,
   certificate: { fade: 1800, expand: 2800, border: 1600, section: 1800, sign: 800, light: 1400, stamp: 1600, accept: 15000 },
   p7BlankBeats: 4, // P7 检测页留白拍数，每拍 = pause
   assets: { voice: {}, sfx: {}, bgm: {}, video: {} }

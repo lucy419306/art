@@ -14,7 +14,24 @@
   --key-red-glow: #e24a4259;
 }
 #narrative { max-width: 860px; }
-#keys { display: flex; align-items: center; justify-content: center; min-height: 28px; }
+#stage { transition: opacity var(--scene-fade-ms, .28s) ease; }
+#stage.stage-leave { opacity: 0; }
+#keys .key { animation: sceneIn .35s ease both; }
+.overlay { animation: sceneIn .4s ease both; }
+.overlay.is-leave { animation: fadeOut .28s ease forwards; }
+.check { animation: sceneIn .35s ease both; }
+.p9r-choice { animation: sceneIn .45s ease both; }
+header, .rail, footer, body:before { transition: opacity .45s ease; }
+.minimal header, .minimal .rail, .minimal footer { opacity: 0; visibility: visible; pointer-events: none; }
+.guide-lock-on .frame { animation: sceneIn .8s ease both; }
+@keyframes sceneIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeOut { to { opacity: 0; } }
+footer { position: relative; }
+#keys {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  display: flex; align-items: center; justify-content: center; min-height: 28px;
+  z-index: 1; white-space: nowrap;
+}
 .key { display: inline-flex; align-items: center; gap: 8px; margin: 0 12px; opacity: 1; color: inherit; }
 .key b { display: none; }
 .key-cap {
@@ -33,13 +50,16 @@
 .key--white { --key-stroke: var(--key-white-dim); --key-glow: var(--key-white-glow); --key-label: var(--key-white-label); --key-lit: var(--key-white); }
 .key--yellow { --key-stroke: var(--key-yellow-dim); --key-glow: var(--key-yellow-glow); --key-label: var(--key-yellow-label); --key-lit: var(--key-yellow); }
 .key--red { --key-stroke: var(--key-red-dim); --key-glow: var(--key-red-glow); --key-label: var(--key-red-label); --key-lit: var(--key-red); }
-.key.is-idle { opacity: .72; }
-.key.is-active, .key.is-breathe { --key-stroke: var(--key-lit); }
-.key.is-active .key-cap, .key.is-breathe .key-cap { box-shadow: 0 0 10px var(--key-glow), 0 0 22px var(--key-glow); }
-.key.is-breathe .key-cap { animation: keyBreathe 4s ease-in-out infinite; }
+.key.is-idle { opacity: .78; }
+.key.is-idle .key-cap { box-shadow: none; animation: none; }
+.key.is-active, .key.is-breathe { --key-stroke: var(--key-lit); opacity: 1; }
+.key.is-active .key-cap, .key.is-breathe .key-cap {
+  box-shadow: 0 0 8px var(--key-glow), 0 0 16px var(--key-glow);
+}
+.key.is-breathe .key-cap { animation: keyBreathe 3.6s ease-in-out infinite; }
 .key.is-press .key-cap { animation: keyPress .15s ease-out; }
 @keyframes keyBreathe {
-  50% { box-shadow: 0 0 6px var(--key-glow), 0 0 14px transparent; opacity: .7; }
+  50% { box-shadow: 0 0 5px var(--key-glow), 0 0 12px transparent; opacity: .82; }
 }
 @keyframes keyPress {
   40% { transform: scale(.92); filter: brightness(1.55); box-shadow: 0 0 16px var(--key-lit); }
@@ -242,6 +262,66 @@
 @keyframes washOut { to { opacity: 0; } }
 @keyframes glowToPoint { to { left: 50%; top: 50%; width: 10px; height: 10px; margin: 0; transform: translate(-50%, -50%); opacity: .2; } }
 @keyframes emberPulse { 0% { opacity: 0; transform: scale(.2); } 40% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.12); } }
+.guide-lock-on { background: #0a0806; color: #efe6d6; }
+.guide-lock-on:before { background: radial-gradient(ellipse at 50% 46%, #3a2a1838, transparent 58%); }
+.guide-lock-on .warm-layer { opacity: .28; transition: opacity var(--guidance-lock-fade-ms, 2.4s) ease; }
+.guide-lock-on .grain { opacity: .08; }
+.guide-lock {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 42vh; padding: 8vh 8vw;
+}
+.guide-mark {
+  position: relative; width: 120px; height: 120px; margin: 0 0 40px;
+  animation: guideMarkIn 1.8s ease both;
+}
+.guide-orbit, .guide-ring, .guide-core {
+  position: absolute; border-radius: 50%; pointer-events: none;
+}
+.guide-orbit { inset: 0; border: 1px solid transparent; }
+.guide-orbit.o1 {
+  border-top-color: #e1bb7b99; border-right-color: #c9a05a33;
+  animation: guideSpin 32s linear infinite;
+}
+.guide-orbit.o2 {
+  inset: 16px; border-bottom-color: #e8c88877; border-left-color: #c9a05a28;
+  animation: guideSpin 44s linear infinite reverse;
+}
+.guide-orbit.o3 {
+  inset: 30px; border-left-color: #d4b06a66; border-top-color: #e1bb7b22;
+  animation: guideSpin 26s linear infinite;
+}
+.guide-ring {
+  inset: 42px; border: 1px solid #e1bb7b55;
+  box-shadow: 0 0 18px #e1bb7b22, inset 0 0 12px #e1bb7b18;
+}
+.guide-core {
+  left: 50%; top: 50%; width: 11px; height: 11px; margin: -5.5px 0 0 -5.5px;
+  background: #f3d59a;
+  box-shadow: 0 0 14px 5px #e8b45a66, 0 0 36px 12px #c48a4a28;
+  animation: guidePulse 4.8s ease-in-out infinite;
+}
+.guide-name {
+  margin: 0 0 18px; font-size: clamp(20px, 2.4vw, 30px); font-weight: 300;
+  letter-spacing: 12px; color: #f0e2c4;
+  animation: guideWord 1.6s ease .7s both;
+}
+.guide-status {
+  margin: 0; font-size: 12px; letter-spacing: 10px; color: #b9a17a;
+  animation: guideWord 1.4s ease 1.5s both;
+}
+.guide-status:before {
+  content: ''; display: inline-block; width: 5px; height: 5px; margin: -1px 10px 0 0;
+  border-radius: 50%; background: #e1bb7b; vertical-align: middle;
+  box-shadow: 0 0 8px #e1bb7b99;
+  animation: guidePulse 4.8s ease-in-out infinite;
+}
+.guide-lock-out .guide-lock,
+.guide-lock-out:before { animation: fadeOut var(--guidance-lock-fade-ms, 2.4s) ease forwards; }
+.guide-lock-out .warm-layer { opacity: 0; }
+@keyframes guideMarkIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes guideSpin { to { transform: rotate(360deg); } }
+@keyframes guidePulse { 50% { opacity: .42; } }
+@keyframes guideWord { from { opacity: 0; letter-spacing: 18px; } to { opacity: 1; } }
 .assess-copy {
   font-family: ui-monospace, 'Cascadia Mono', 'SF Mono', Consolas, 'Courier New', monospace;
   font-size: clamp(22px, 2.5vw, 34px); font-weight: 400; letter-spacing: 8px;
