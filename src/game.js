@@ -107,11 +107,14 @@ function choice(valid, timeout, promptAt, promptId) {
     accept = key => {
       if (valid.includes(key)) {
         GameKeys.press(key);
-        const sfxId = key === 'left'
-          ? (media.path('sfx', 'key.white') ? 'key.white' : 'beep')
-          : (key === 'right'
-            ? (media.path('sfx', 'key.yellow') ? 'key.yellow' : 'beep')
-            : 'beep');
+        const isAnyKey = valid.length >= 3;
+        const sfxId = isAnyKey
+          ? 'beep'
+          : (key === 'left'
+            ? (media.path('sfx', 'key.white') ? 'key.white' : 'beep')
+            : (key === 'right'
+              ? (media.path('sfx', 'key.yellow') ? 'key.yellow' : 'beep')
+              : 'beep'));
         sfx(sfxId).catch(ignoreReset);
         finish(key);
       }
@@ -192,9 +195,12 @@ async function sceneP4(sid) {
 }
 async function sceneP8(sid) {
   guard(sid);
+  media.stopBackground();
+  background('standby', 0.25);
   await view('<div class="eyebrow">PROCESSING</div><h1 class="assess-copy">正在评估自主决策能力</h1><div class="orb assess"></div>', 'P8');
   await wait(5000);
   guard(sid);
+  media.stopBackground();
   if (GameRules.passes(answers)) await passed(sid); else await rejected(sid);
 }
 async function start(key) {
@@ -246,6 +252,7 @@ async function question(i) {
   } else if (i === 2) {
     keys();
     media.stopBackground();
+    sfx('p7.dark').catch(e => { if (e.message !== 'reset') console.error(e); });
     await view(heading('MEMORY DETECTED', '系统检测到一段高痛苦记忆。'), id);
     await sfx('p7.pain').catch(e => { if (e.message !== 'reset') console.error(e); });
     for (let n = 0; n < (C.p7BlankBeats || 4); n++) await pause();
@@ -291,6 +298,7 @@ async function costs(prefix, gaps = true, tailPause = C.longPause) {
 }
 async function passed(sid = session) {
   guard(sid);
+  sfx('beep').catch(e => { if (e.message !== 'reset') console.error(e); });
   await view(heading('AUTONOMY APPROVED', '批准恢复自主权'), 'P9C');
   await say('c.confirm'); await say('c.restored'); await pause(); await costs('c');
   await view(heading('DECISION SIMULATION', '最后一次确认：是否仍要恢复自主权？') + GameKeys.panels({ left: '放弃', right: '恢复' }) + '<p class="prompt">请选择</p>', 'P9C');
@@ -306,7 +314,11 @@ async function passed(sid = session) {
 async function certificate(sid = session, endingId = 'C') {
   guard(sid);
   certificateState = 'transition';
-  if (endingId === 'C') { await result('C'); await wait(1000); }
+  if (endingId === 'C') {
+    sfx('c.1st').catch(e => { if (e.message !== 'reset') console.error(e); });
+    await result('C');
+    await wait(1000);
+  }
   document.body.classList.add('ceremony');
   stage.style.setProperty('--fade-ms', `${C.certificate.fade * C.speed}ms`);
   stage.classList.add('ceremony-fade');
@@ -382,6 +394,9 @@ async function certificate(sid = session, endingId = 'C') {
   cert?.classList.add('sealed');
   document.querySelector('#certificate-status').textContent = endingId === 'B' ? '收回完成' : '交接完成';
   certificateState = 'complete';
+  if (endingId === 'C') {
+    sfx('c.2nd').catch(e => { if (e.message !== 'reset') console.error(e); });
+  }
   await sfx('stamp');
   if (endingId === 'C') {
     await say('c.complete'); await pause(); await say('c.yours');
@@ -394,6 +409,7 @@ async function certificate(sid = session, endingId = 'C') {
 
 async function rejected(sid = session) {
   guard(sid);
+  sfx('beep').catch(e => { if (e.message !== 'reset') console.error(e); });
   await view(heading('ASSESSMENT REPORT / 07', '申请已驳回') + '<table class="report"><tr><td>自主决策风险</td><td>高</td></tr><tr><td>后悔耐受度</td><td>低</td></tr><tr><td>情绪波动</td><td>高</td></tr><tr><td>决策效率</td><td>43%</td></tr></table>', 'P9R');
   await say('r.sorry'); await say('r.unfit'); await pause();
   await say('r.common'); await pause(); await say('r.reject'); await pause(); await say('r.override');
@@ -419,6 +435,7 @@ async function endingBCore(sid = session) {
   await leaveStage();
   document.body.classList.add('minimal');
   await view(orb, 'B', true);
+  sfx('b.think').catch(e => { if (e.message !== 'reset') console.error(e); });
   await wait(3000);
   guard(sid);
   document.body.classList.remove('minimal'); background('evaluation');
@@ -429,6 +446,17 @@ async function endingBCore(sid = session) {
 async function contract(sid = session) {
   guard(sid);
   if (contractCount >= 3) return endingBCore(sid);
+  media.stopBackground();
+  if (!devMuted) {
+    const playP10bAndAsmr = async () => {
+      await sfx('p10b');
+      guard(sid);
+      if (!devMuted && phase === 'P10B' && !ending) {
+        media.playChain({ loop: 'p4_6.asmr.loop', volume: 0.25 }, run.signal);
+      }
+    };
+    playP10bAndAsmr().catch(e => { if (e.message !== 'reset') console.error(e); });
+  }
   await view(heading('OVERRIDE REQUEST', '检测到强制收回请求。'), 'P10B');
   await say('b.detect'); await pause(); await say('b.risk');
   if (contractCount === 0) {
@@ -440,11 +468,13 @@ async function contract(sid = session) {
     guard(sid);
     await contractView(contractCount);
     keys(['left', 'right', 'third']);
+    sfx('p10b.tick').catch(e => { if (e.message !== 'reset') console.error(e); });
     await say(`b.term${contractCount + 1}`);
     const waitMs = hesitate ? 1 : C.hesitationTimeout;
     hesitate = false;
     const a = await choice(['left', 'right', 'third'], waitMs);
     if (a === 'timeout') {
+      sfx('p10b').catch(e => { if (e.message !== 'reset') console.error(e); });
       stage.insertAdjacentHTML('beforeend', '<div class="overlay"><div class="eyebrow">CONFIRMATION REQUIRED</div><p>系统检测到您的犹豫。</p><h2>是否还想要拥有自主决策权？</h2><div class="choices"><div class="card">' + GameKeys.icon('left', 'sm', 'breathe') + '<h2>否 · 放弃</h2></div><div class="card warm">' + GameKeys.icon('right', 'sm', 'breathe') + '<h2>是 · 继续</h2></div></div></div>');
       keys(['left', 'right']);
       await say('b.hesitate'); await pause(); await say('b.want');
@@ -459,7 +489,7 @@ async function contract(sid = session) {
     contractCount++;
     const marks = stage.querySelectorAll('.check span');
     if (marks[contractCount - 1]) marks[contractCount - 1].textContent = '✓';
-    await sfx('tick', 300);
+    await wait(300);
   }
   await endingBCore(sid);
 }
@@ -469,6 +499,7 @@ async function endingA(entry, sid = session, skipEntry = false) {
   ending = entry;
   currentBeat = 'P11.' + entry;
   media.stopBackground();
+  sfx('p11.a').catch(e => { if (e.message !== 'reset') console.error(e); });
   document.body.style.setProperty('--guidance-enter-ms', `${C.guidanceEnter * C.speed}ms`);
   document.body.style.setProperty('--guidance-close-ms', `${C.guidanceClose * C.speed}ms`);
   await leaveStage();
@@ -476,7 +507,9 @@ async function endingA(entry, sid = session, skipEntry = false) {
   document.querySelector('#signature').textContent = '人生指导系统：运行中';
   await view(heading('YOUR PERSONAL GUIDANCE', '人生指导系统：运行中') + '<div class="timeline"></div>', 'P11', true);
   await Promise.all([sfx('switch', C.guidanceEnter), wait(C.guidanceEnter)]);
-  background('guidance');
+  if (!media.path('sfx', 'p11.a')) {
+    background('guidance');
+  }
   if (!skipEntry) { await say('a.thanks'); await say('a.next'); }
   guard(sid);
   for (const text of [

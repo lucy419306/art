@@ -105,7 +105,17 @@ GAME_ASSETS.sfx['p5.cue'] = '../assets/sfx/P5 工作 提示音.mp3';
 GAME_ASSETS.sfx['p6.cue'] = '../assets/sfx/P6 婚姻 提示音.mp3';
 GAME_ASSETS.sfx['p7.pain'] = '../assets/sfx/P7 痛苦记忆.mp3';
 GAME_ASSETS.sfx['p7.cue'] = '../assets/sfx/P7 记忆 提示音.mp3';
+GAME_ASSETS.sfx['p7.dark'] = '../assets/sfx/P7 dark.mp3';
 GAME_ASSETS.sfx['p7.ending'] = '../assets/sfx/P4-6 背景声ending.mp3';
+GAME_ASSETS.sfx['p10b'] = '../assets/sfx/P10B.mp3';
+GAME_ASSETS.sfx['p10b.sfx'] = '../assets/sfx/P10B.mp3';
+GAME_ASSETS.sfx['p10b.tick'] = '../assets/sfx/P10B 打勾.mp3';
+GAME_ASSETS.sfx['b.think'] = '../assets/sfx/B think.mp3';
+GAME_ASSETS.sfx['c.1st'] = '../assets/sfx/C 1st.mp3';
+GAME_ASSETS.sfx['c.2nd'] = '../assets/sfx/C 2nd.mp3';
+GAME_ASSETS.sfx['p11.a'] = '../assets/sfx/P11 A.mp3';
 
 for (const id of ['evaluation', 'guidance', 'certificate']) GAME_ASSETS.bgm[id] = `../assets/bgm/${id}.mp3`;
+GAME_ASSETS.bgm['guidance'] = '../assets/sfx/P11 A.mp3';
+GAME_ASSETS.bgm['p11.a'] = '../assets/sfx/P11 A.mp3';
 GAME_ASSETS.bgm['standby'] = '../assets/sfx/P0待机持续.mp3';

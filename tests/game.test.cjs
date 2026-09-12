@@ -620,3 +620,288 @@ test('white and yellow key press audio triggers: plays corresponding white / yel
   const playedYellow = h.audios.find(a => a.path === yellowKeyAudio);
   assert.ok(playedYellow && !playedYellow.paused, 'Pressing yellow key must trigger 黄键.mp3');
 });
+
+test('P7 dark plays once at P7 start and P8 assessment plays P0 standby audio', async () => {
+  const p7Dark = '../assets/sfx/P7 dark.mp3';
+  const p7Pain = '../assets/sfx/P7 痛苦记忆.mp3';
+  const p0Standby = '../assets/sfx/P0待机持续.mp3';
+  const audioFiles = {
+    [p7Dark]: 11184,
+    [p7Pain]: 3240,
+    [p0Standby]: 5000,
+    ['../assets/sfx/P1启动.mp3']: 100,
+    [voice('p1.detect')]: 100,
+    [voice('p2.welcome')]: 100,
+    [voice('p3.count')]: 100,
+    [voice('p3.perfect')]: 100,
+    [voice('p4.meaning')]: 100,
+    [voice('p4.simulations')]: 100,
+    [voice('p4.record')]: 100
+  };
+  for (let i = 1; i <= 7; i++) audioFiles[voice(`p2.card${i}`)] = 100;
+  for (const id of ['P5', 'P6', 'P7']) {
+    for (const action of ['intro', 'choose', 'record', 'left', 'right']) {
+      const key = `${id}.${action}`;
+      if (voiceCues[key]) audioFiles[voice(key)] = 100;
+    }
+  }
+
+  const h = harness(audioFiles);
+  await h.key('ArrowLeft');
+
+  // 作答 P5 和 P6
+  await reach(h, 'P5');
+  await h.key('ArrowLeft');
+  await reach(h, 'P6');
+  await h.key('ArrowLeft');
+
+  // 进入 P7：系统检测到痛苦记忆，同时触发 P7 dark 播放一次
+  await h.until(() => h.audios.some(a => a.path === p7Dark));
+  const darkAudio = h.audios.find(a => a.path === p7Dark);
+  assert.ok(darkAudio, 'P7 dark sfx must be triggered at P7 start');
+  assert.equal(darkAudio.loop, undefined, 'P7 dark must play once without loop');
+
+  // 到达 P7 题卡并作答
+  await reach(h, 'P7');
+  await h.key('ArrowLeft');
+
+  // 进入 P8 判定：正在评估自主决策能力时播放 P0待机持续.mp3
+  await h.until(s => s.phase === 'P8');
+  const standbyInP8 = h.audios.filter(a => a.path === p0Standby).pop();
+  assert.ok(standbyInP8 && !standbyInP8.paused, 'P0 standby audio must play during P8 assessment');
+
+  // 判定 5 秒结束后进入 P9C，P0待机持续声应当停止
+  await reach(h, 'P9C');
+  assert.equal(standbyInP8.paused, true, 'P0 standby audio must stop after P8 assessment finishes');
+});
+
+test('P11 A plays at the start of 11A ending', async () => {
+  const p11AAudio = '../assets/sfx/P11 A.mp3';
+  const audioFiles = {
+    [p11AAudio]: 45576,
+    [voice('a2.confirm')]: 100,
+    [voice('a2.stop')]: 100,
+    [voice('a.thanks')]: 100,
+    [voice('a.next')]: 100
+  };
+
+  const h = harness(audioFiles);
+  await h.flush();
+
+  // 直接触发 P11.A2 结局
+  h.ctx.enterBeat('P11.A2');
+  await h.until(() => h.audios.some(a => a.path === p11AAudio));
+
+  const p11Audio = h.audios.find(a => a.path === p11AAudio);
+  assert.ok(p11Audio && !p11Audio.paused, 'P11 A.mp3 must play when entering ending A');
+  assert.equal(p11Audio.loop, undefined, 'P11 A.mp3 must be played as non-loop sfx');
+
+  // 也验证 P11.A1 也会播放 P11 A.mp3
+  const h2 = harness(audioFiles);
+  await h2.flush();
+  h2.ctx.enterBeat('P11.A1');
+  await h2.until(() => h2.audios.some(a => a.path === p11AAudio));
+  const p11Audio2 = h2.audios.find(a => a.path === p11AAudio);
+  assert.ok(p11Audio2 && !p11Audio2.paused, 'P11 A.mp3 must play when entering ending A1');
+});
+
+test('P9C and P9R play beep sfx once when starting', async () => {
+  const beepPath = '../assets/sfx/P2 七张档案卡.mp3';
+  const audioFiles = {
+    [beepPath]: 100,
+    [voice('c.confirm')]: 100,
+    [voice('r.sorry')]: 100
+  };
+
+  // 测试 P9C 开始播放 Beep
+  const hC = harness(audioFiles);
+  await hC.flush();
+  hC.ctx.enterBeat('P9C');
+  await hC.until(s => s.phase === 'P9C');
+  const beepsInP9C = hC.audios.filter(a => a.path === beepPath);
+  assert.ok(beepsInP9C.length >= 1, 'P9C must play beep when starting');
+
+  // 测试 P9R 开始播放 Beep
+  const hR = harness(audioFiles);
+  await hR.flush();
+  hR.ctx.enterBeat('P9R');
+  await hR.until(s => s.phase === 'P9R');
+  const beepsInP9R = hR.audios.filter(a => a.path === beepPath);
+  assert.ok(beepsInP9R.length >= 1, 'P9R must play beep when starting');
+});
+
+test('P10B plays P10B sfx once then starts ASMR loop; hesitation triggers P10B sfx again', async () => {
+  const p10bAudio = '../assets/sfx/P10B.mp3';
+  const asmrLoop = '../assets/sfx/P4-6 背景声ASMR loop.mp3';
+  const audioFiles = {
+    [p10bAudio]: 2064,
+    [asmrLoop]: 36000,
+    [voice('b.detect')]: 100,
+    [voice('b.risk')]: 100,
+    [voice('b.accept')]: 100,
+    [voice('b.term1')]: 100,
+    [voice('b.hesitate')]: 100,
+    [voice('b.want')]: 100
+  };
+
+  const h = harness(audioFiles);
+  await h.flush();
+
+  // 进入 P10B 拍
+  h.ctx.enterBeat('P10B');
+  await h.until(() => h.audios.some(a => a.path === p10bAudio));
+
+  const firstP10b = h.audios.find(a => a.path === p10bAudio);
+  assert.ok(firstP10b && !firstP10b.paused, 'P10B sfx must play at P10B start');
+  assert.equal(firstP10b.loop, undefined, 'P10B sfx must play once without loop');
+
+  // 当 P10B 播完后，接上 P4-6 背景声 ASMR loop
+  await h.until(() => h.audios.some(a => a.path === asmrLoop));
+  const asmrAudio = h.audios.find(a => a.path === asmrLoop);
+  assert.ok(asmrAudio && !asmrAudio.paused, 'ASMR loop must start after P10B sfx finishes');
+  assert.equal(asmrAudio.loop, true, 'ASMR must be looped');
+
+  // 等待并触发犹豫（超时）
+  await h.until(s => s.cueId === 'b.term1');
+  await reach(h, 'P10B');
+  const countBeforeHesitate = h.audios.filter(a => a.path === p10bAudio).length;
+
+  // 步进让条款超时，触发犹豫
+  await h.step();
+  await h.until(() => h.audios.filter(a => a.path === p10bAudio).length > countBeforeHesitate);
+  const p10bHesitate = h.audios.filter(a => a.path === p10bAudio).pop();
+  assert.ok(p10bHesitate && !p10bHesitate.paused, 'P10B sfx must play when hesitation is detected');
+});
+
+test('P10B tick plays during terms narration', async () => {
+  const p10bTickAudio = '../assets/sfx/P10B 打勾.mp3';
+  const audioFiles = {
+    [p10bTickAudio]: 2184,
+    [voice('b.detect')]: 100,
+    [voice('b.risk')]: 100,
+    [voice('b.accept')]: 100,
+    [voice('b.term1')]: 100
+  };
+
+  const h = harness(audioFiles);
+  await h.flush();
+
+  h.ctx.enterBeat('P10B');
+  await h.until(s => s.cueId === 'b.term1');
+
+  const tickAudio = h.audios.find(a => a.path === p10bTickAudio);
+  assert.ok(tickAudio && !tickAudio.paused, 'P10B tick sfx must play during term narration');
+});
+
+test('any key confirmation uses beep sfx regardless of white or yellow key pressed', async () => {
+  const beepAudio = '../assets/sfx/P2 七张档案卡.mp3';
+  const whiteKeyAudio = '../assets/sfx/白键.mp3';
+  const yellowKeyAudio = '../assets/sfx/黄键.mp3';
+
+  const audioFiles = {
+    [beepAudio]: 500,
+    [whiteKeyAudio]: 500,
+    [yellowKeyAudio]: 500,
+    [voice('b.detect')]: 100,
+    [voice('b.risk')]: 100,
+    [voice('b.accept')]: 100,
+    [voice('b.term1')]: 100,
+    [voice('b.term2')]: 100
+  };
+
+  const h = harness(audioFiles);
+  await h.flush();
+
+  h.ctx.enterBeat('P10B');
+  await reach(h, 'P10B');
+
+  // 第一条条款：按 ArrowLeft（白键）确认，必须触发 beep 音效，而非白键音效
+  const beepsBefore = h.audios.filter(a => a.path === beepAudio).length;
+  await h.key('ArrowLeft');
+  const beepsAfterWhite = h.audios.filter(a => a.path === beepAudio).length;
+  const whiteAudios = h.audios.filter(a => a.path === whiteKeyAudio).length;
+  assert.equal(beepsAfterWhite, beepsBefore + 1, 'Pressing white key in any-key mode must trigger beep sfx');
+  assert.equal(whiteAudios, 0, 'Pressing white key in any-key mode must NOT trigger white key sfx');
+
+  // 第二条条款：按 ArrowRight（黄键）确认，也必须触发 beep 音效，而非黄键音效
+  await reach(h, 'P10B');
+  await h.key('ArrowRight');
+  const beepsAfterYellow = h.audios.filter(a => a.path === beepAudio).length;
+  const yellowAudios = h.audios.filter(a => a.path === yellowKeyAudio).length;
+  assert.equal(beepsAfterYellow, beepsAfterWhite + 1, 'Pressing yellow key in any-key mode must trigger beep sfx');
+  assert.equal(yellowAudios, 0, 'Pressing yellow key in any-key mode must NOT trigger yellow key sfx');
+});
+
+test('ending B plays B think sfx when the central point/orb appears', async () => {
+  const bThinkAudio = '../assets/sfx/B think.mp3';
+  const audioFiles = {
+    [bThinkAudio]: 3432,
+    [voice('b.promise')]: 100,
+    [voice('b.confirm')]: 100
+  };
+
+  const h = harness(audioFiles);
+  await h.flush();
+
+  // 直接触发结局 B
+  h.ctx.enterBeat('B');
+  await h.until(() => h.audios.some(a => a.path === bThinkAudio));
+
+  const thinkAudio = h.audios.find(a => a.path === bThinkAudio);
+  assert.ok(thinkAudio && !thinkAudio.paused, 'B think sfx must play when central point appears in ending B');
+  assert.equal(thinkAudio.loop, undefined, 'B think sfx must play as non-loop sfx');
+});
+
+test('ending C plays C 1st sfx when entering ending C', async () => {
+  const c1stAudio = '../assets/sfx/C 1st.mp3';
+  const audioFiles = {
+    [c1stAudio]: 27048,
+    [voice('c.final')]: 100,
+    [voice('c.handover')]: 100
+  };
+
+  const h = harness(audioFiles);
+  await h.flush();
+
+  // 直接触发结局 C
+  h.ctx.enterBeat('C');
+  await h.until(() => h.audios.some(a => a.path === c1stAudio));
+
+  const c1st = h.audios.find(a => a.path === c1stAudio);
+  assert.ok(c1st && !c1st.paused, 'C 1st sfx must play when entering ending C');
+  assert.equal(c1st.loop, undefined, 'C 1st sfx must play as non-loop sfx');
+});
+
+test('ending C plays C 2nd sfx when sealing the certificate', async () => {
+  const c2ndAudio = '../assets/sfx/C 2nd.mp3';
+  const audioFiles = {
+    [c2ndAudio]: 28056,
+    [voice('c.final')]: 100,
+    [voice('c.handover')]: 100,
+    [voice('c.complete')]: 100,
+    [voice('c.yours')]: 100,
+    [voice('c.luck')]: 100
+  };
+
+  const h = harness(audioFiles);
+  await h.flush();
+
+  // 直接触发结局 C
+  h.ctx.enterBeat('C');
+  await h.until(s => s.certificateState === 'awaiting');
+
+  // 按任意键接受证书
+  await h.key('Space');
+
+  // 等待盖章落印并验证触发了 C 2nd.mp3
+  await h.until(() => h.audios.some(a => a.path === c2ndAudio));
+
+  const c2nd = h.audios.find(a => a.path === c2ndAudio);
+  assert.ok(c2nd && !c2nd.paused, 'C 2nd sfx must play when sealing certificate in ending C');
+  assert.equal(c2nd.loop, undefined, 'C 2nd sfx must play as non-loop sfx');
+});
+
+
+
+
+

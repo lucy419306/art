@@ -81,6 +81,41 @@ class GameMedia {
         if (this.inventory.has(p)) return p;
       }
     }
+    if (kind === 'sfx' && (id === 'p7.dark' || id === 'p7_dark' || id === 'dark')) {
+      for (const p of ['../assets/sfx/P7 dark.mp3', '../assets/sfx/p7.dark.mp3', '../assets/sfx/p7_dark.mp3']) {
+        if (this.inventory.has(p)) return p;
+      }
+    }
+    if (kind === 'sfx' && (id === 'p10b' || id === 'p10b.sfx' || id === 'P10B')) {
+      for (const p of ['../assets/sfx/P10B.mp3', '../assets/sfx/p10b.mp3']) {
+        if (this.inventory.has(p)) return p;
+      }
+    }
+    if (kind === 'sfx' && (id === 'p10b.tick' || id === 'p10b_tick' || id === 'tick')) {
+      for (const p of ['../assets/sfx/P10B 打勾.mp3', '../assets/sfx/p10b 打勾.mp3', '../assets/sfx/tick.mp3']) {
+        if (this.inventory.has(p)) return p;
+      }
+    }
+    if (kind === 'sfx' && (id === 'b.think' || id === 'b_think' || id === 'think')) {
+      for (const p of ['../assets/sfx/B think.mp3', '../assets/sfx/b think.mp3', '../assets/sfx/b.think.mp3']) {
+        if (this.inventory.has(p)) return p;
+      }
+    }
+    if (kind === 'sfx' && (id === 'c.1st' || id === 'c_1st' || id === 'c1st' || id === 'C 1st')) {
+      for (const p of ['../assets/sfx/C 1st.mp3', '../assets/sfx/c 1st.mp3', '../assets/sfx/c_1st.mp3']) {
+        if (this.inventory.has(p)) return p;
+      }
+    }
+    if (kind === 'sfx' && (id === 'c.2nd' || id === 'c_2nd' || id === 'c2nd' || id === 'C 2nd')) {
+      for (const p of ['../assets/sfx/C 2nd.mp3', '../assets/sfx/c 2nd.mp3', '../assets/sfx/c_2nd.mp3']) {
+        if (this.inventory.has(p)) return p;
+      }
+    }
+    if ((kind === 'sfx' || kind === 'bgm') && (id === 'p11.a' || id === 'p11_a' || id === 'p11' || id === 'guidance')) {
+      for (const p of ['../assets/sfx/P11 A.mp3', '../assets/sfx/p11.a.mp3', '../assets/sfx/p11_a.mp3', '../assets/bgm/guidance.mp3']) {
+        if (this.inventory.has(p)) return p;
+      }
+    }
     return null;
   }
   _arm(job) {
