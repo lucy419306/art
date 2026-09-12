@@ -113,15 +113,17 @@ test('A2: final confirmation timeout retains prior 30/90-second fallback', async
   await h.until(s => !s.waiting); assert.equal(h.now - t, 90000);
   await h.until(s => s.ending === 'A2');
 });
-test('A1: all three timeouts choose yellow; rejection waits exactly 10s and ignores white/yellow', async () => {
+test('A1: all three timeouts choose yellow; rejection waits exactly 15s and ignores white/yellow', async () => {
   const h = harness(); await questions(h, [null, null, null]);   await reach(h, 'P9R');
+  assert.match(h.elements.get('#stage').innerHTML, /若想强制拥有决策权/);
+  assert.match(h.elements.get('#stage').innerHTML, /可按下红键/);
   assert.match(h.elements.get('#stage').innerHTML, /请做出抉择/);
-  assert.doesNotMatch(h.elements.get('#stage').innerHTML, /请保持原位|强制收回决策权（红色按钮）/);
+  assert.doesNotMatch(h.elements.get('#stage').innerHTML, /请保持原位|强制收回决策权（红色按钮）|申请已驳回/);
   assert.match(h.elements.get('#keys').innerHTML, /红键/);
   assert.doesNotMatch(h.elements.get('#keys').innerHTML, /白键|黄键/);
   assert.deepEqual(Array.from(h.ctx.gameStatus().answers), ['right', 'right', 'right']);
   const t = h.now; await h.key('ArrowLeft'); await h.key('ArrowRight');
-  assert.equal(h.ctx.gameStatus().waiting, true); await h.step(); assert.equal(h.now - t, 10000);
+  assert.equal(h.ctx.gameStatus().waiting, true); await h.step(); assert.equal(h.now - t, 15000);
   await h.until(s => s.ending === 'A1');
 });
 test('B: any of three colors confirms each clause; no synthetic audio across full ending', async () => {
@@ -150,8 +152,9 @@ test('A3: hesitation unanswered for 15 seconds terminates', async () => {
 });
 test('red is hidden/disabled at standby; held keys cannot start; F1 cancels opening', async () => {
   const h = harness(); await h.key('Space'); assert.equal(h.ctx.gameStatus().phase, 'P0');
-  assert.equal(h.elements.get('#keys').innerHTML, '');
-  assert.ok(!h.elements.get('#keys').innerHTML.includes('third'));
+  assert.match(h.elements.get('#keys').innerHTML, /白键/);
+  assert.match(h.elements.get('#keys').innerHTML, /黄键/);
+  assert.match(h.elements.get('#keys').innerHTML, /红键/);
   await h.key('ArrowLeft', true); assert.equal(h.ctx.gameStatus().phase, 'P0');
   await h.key('ArrowLeft'); await h.key('ArrowRight'); assert.equal(h.ctx.gameStatus().phase, 'P1');
   await h.key('F1'); assert.equal(h.ctx.gameStatus().phase, 'P0');

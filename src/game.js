@@ -53,10 +53,11 @@ function background(id, volume) { if (!devMuted) media.backgroundTrack(id, run.s
 function choice(valid, timeout, promptAt, promptId) {
   keys(valid);
   return new Promise((resolve, reject) => {
-    const signal = run.signal, promptController = new AbortController();
-    let timer, reminder, promptDone = Promise.resolve(), settled = false;
+    const signal = run.signal, promptController = new AbortController(), hold = new AbortController();
+    let promptDone = Promise.resolve(), settled = false;
+    const ignoreReset = e => { if (e.message !== 'reset') console.error(e); };
     const clear = () => {
-      clearTimeout(timer); clearTimeout(reminder);
+      hold.abort();
       promptController.abort();
       signal.removeEventListener('abort', abort);
       accept = null; keys();
@@ -65,16 +66,14 @@ function choice(valid, timeout, promptAt, promptId) {
     const abort = () => { if (settled) return; settled = true; clear(); reject(new Error('reset')); };
     accept = key => { if (valid.includes(key)) { GameKeys.press(key); finish(key); } };
     signal.addEventListener('abort', abort, { once: true });
-    if (promptAt) reminder = setTimeout(() => {
-      promptDone = say(promptId, { signal: promptController.signal }).catch(e => {
-        if (e.message !== 'reset') console.error(e);
-      });
-    }, promptAt * C.speed);
-    if (timeout) timer = setTimeout(async () => {
+    if (promptAt) wait(promptAt, hold.signal).then(() => {
+      promptDone = say(promptId, { signal: promptController.signal }).catch(ignoreReset);
+    }).catch(ignoreReset);
+    if (timeout) wait(timeout, hold.signal).then(async () => {
       // 提示音轨长于剩余等待时间时，等其结束；观众仍可立即选择并中止提示。
       await promptDone;
       finish('timeout');
-    }, timeout * C.speed);
+    }).catch(ignoreReset);
   });
 }
 
@@ -150,6 +149,7 @@ async function question(i) {
     await wait(1000); document.body.classList.remove('black'); background('evaluation');
   }
   view(cards(`第${['一', '二', '三'][i]}题：${names[i]}`, white[i], yellow[i]), id);
+  keys(['left', 'right']);
   await say(`${id}.intro`); await pause(); await say(`${id}.choose`);
   let a = await choice(['left', 'right'], C.questionTimeout, C.questionPrompt, `${id}.prompt`);
   if (a === 'timeout') { a = 'right'; await say(`${id}.auto`); }
@@ -181,6 +181,7 @@ async function passed(sid = session) {
   result('P9C');
   await say('c.confirm'); await say('c.restored'); await pause(); await costs('c');
   view(heading('DECISION SIMULATION', '最后一次确认：是否仍要恢复自主权？') + GameKeys.panels({ left: '放弃', right: '恢复' }) + '<p class="prompt">请选择</p>', 'P9C');
+  keys(['left', 'right']);
   await say('c.ask');
   const a = await choice(['left', 'right'], C.finalTimeout, C.finalPrompt, 'P9C.prompt');
   guard(sid);
@@ -251,7 +252,7 @@ async function rejected(sid = session) {
   view(heading('ASSESSMENT REPORT / 07', '申请已驳回') + '<table class="report"><tr><td>自主决策风险</td><td>高</td></tr><tr><td>后悔耐受度</td><td>低</td></tr><tr><td>情绪波动</td><td>高</td></tr><tr><td>决策效率</td><td>43%</td></tr></table>', 'P9R');
   await say('r.sorry'); await say('r.unfit'); await pause();
   await say('r.common'); await pause(); await say('r.reject'); await pause(); await say('r.override');
-  view('<div class="p9r-choice"><div class="fade"><h2>申请已驳回</h2></div><h1>请做出抉择</h1><div class="override-meter"><div class="override-meter-label">强制收回决策权</div><div class="countdown-track"><div id="countdown"></div></div></div></div>');
+  view('<div class="p9r-choice"><h1 class="p9r-lead"><strong>若想强制拥有决策权</strong><span>可按下红键</span></h1><div class="override-meter"><div class="override-meter-label">请做出抉择</div><div class="countdown-track"><div id="countdown"></div></div></div></div>');
   redVisible = true;
   keys(['third']);
   await sfx('ready');
@@ -281,16 +282,18 @@ async function contract(sid = session) {
   if (contractCount >= 3) return endingBCore(sid);
   view(heading('OVERRIDE REQUEST', '检测到强制收回请求。'), 'P10B');
   await say('b.detect'); await pause(); await say('b.risk');
-  contractView(0); await say('b.accept');
+  contractView(0); keys(['left', 'right', 'third']); await say('b.accept');
   while (contractCount < 3) {
     guard(sid);
     contractView(contractCount);
+    keys(['left', 'right', 'third']);
     await say(`b.term${contractCount + 1}`);
     const waitMs = hesitate ? 1 : C.hesitationTimeout;
     hesitate = false;
     const a = await choice(['left', 'right', 'third'], waitMs);
     if (a === 'timeout') {
       stage.insertAdjacentHTML('beforeend', '<div class="overlay"><div class="eyebrow">CONFIRMATION REQUIRED</div><p>系统检测到您的犹豫。</p><h2>是否还想要拥有自主决策权？</h2><div class="choices"><div class="card">' + GameKeys.icon('left', 'sm', 'breathe') + '<h2>否 · 放弃</h2></div><div class="card warm">' + GameKeys.icon('right', 'sm', 'breathe') + '<h2>是 · 继续</h2></div></div></div>');
+      keys(['left', 'right']);
       await say('b.hesitate'); await pause(); await say('b.want');
       const answer = await choice(['left', 'right'], C.hesitationAnswerTimeout);
       if (answer === 'right') { await say('b.continue'); continue; }
@@ -348,7 +351,7 @@ function stopVideo() {
 }
 function showStandby() {
   view('<div class="eyebrow">自主决策能力评估 / 07</div>' + orb + '<h1 class="standby">按任意按钮开始</h1><p class="prompt">请先就座</p>', 'P0');
-  keys();
+  keys(['left', 'right', 'third']);
 }
 function clearChrome() {
   accept = null; redVisible = false; keys();
@@ -413,6 +416,11 @@ function enterBeat(id, preset) {
 function reset(operator = false) { enterBeat(operator ? 'P12' : 'P0'); }
 window.enterBeat = enterBeat;
 window.setDevMuted = on => { devMuted = !!on; };
+window.setDevSpeed = mult => { media.setRate(mult); };
+window.setDevPaused = on => {
+  if (on) media.pauseClock(); else media.resumeClock();
+  document.body.classList.toggle('dev-paused', !!on);
+};
 window.addEventListener('keydown', e => {
   if (typeof window.__devKey === 'function' && window.__devKey(e)) return;
   if (e.code === 'F1') { e.preventDefault(); if (!e.repeat) reset(true); return; }

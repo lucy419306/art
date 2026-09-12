@@ -54,15 +54,21 @@
 .card .key, .overlay .key { margin: 0 0 8px; }
 .overlay { background: #04080bf5; }
 .overlay .card { background: #10181cf2; }
-.p9r-choice { display: flex; flex-direction: column; align-items: center; width: min(560px, 82vw); }
-.override-meter { width: 100%; margin-top: 42px; }
+.p9r-choice { display: flex; flex-direction: column; align-items: center; width: min(760px, 88vw); }
+.p9r-lead {
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  margin: 18px 0 0; line-height: 1.4; letter-spacing: 4px;
+}
+.p9r-lead strong { font-weight: 700; font-size: clamp(36px, 4.2vw, 58px); letter-spacing: 6px; }
+.p9r-lead span { font-weight: 300; font-size: clamp(22px, 2.4vw, 34px); letter-spacing: 5px; color: #c5d0d4; }
+.override-meter { width: 100%; margin-top: 56px; }
 .override-meter-label {
-  font-size: 16px; font-weight: 600; letter-spacing: 5px; color: var(--key-red);
-  text-shadow: 0 0 14px var(--key-red-glow), 0 0 28px #e24a4233; margin-bottom: 18px;
+  font-size: 18px; font-weight: 600; letter-spacing: 6px; color: var(--key-red);
+  text-shadow: 0 0 14px var(--key-red-glow), 0 0 28px #e24a4233; margin-bottom: 20px;
 }
 .countdown-track {
-  height: 8px; border-radius: 4px; background: #4a202055; overflow: hidden;
-  box-shadow: 0 0 16px #e24a4228;
+  height: 18px; border-radius: 9px; background: #4a202055; overflow: hidden;
+  box-shadow: 0 0 22px #e24a4238;
 }
 #countdown { height: 100%; background: var(--key-red); box-shadow: 0 0 18px #e24a42aa; transform-origin: left; }
 #countdown.running { animation: countdown var(--countdown-ms) linear forwards; }
