@@ -26,10 +26,10 @@ function view(html, id = phase) {
   stage.innerHTML = html;
   sub.textContent = '';
 }
-function keys(shown = []) {
+function keys(shown = [], state) {
   const el = document.querySelector('#keys');
   if (!el) return;
-  el.innerHTML = GameKeys.bar(shown, shown.length ? 'breathe' : 'idle');
+  el.innerHTML = GameKeys.bar(shown, shown.length ? (state || 'idle') : 'idle');
 }
 function heading(k, t) { return `<div class="eyebrow">${k}</div><h1>${t}</h1>`; }
 function cards(title, white, yellow) {
@@ -51,7 +51,7 @@ const sfx = (id, fallback = 0) => devMuted ? Promise.resolve() : media.play('sfx
 function background(id, volume) { if (!devMuted) media.backgroundTrack(id, run.signal, volume); }
 
 function choice(valid, timeout, promptAt, promptId) {
-  keys(valid);
+  keys(valid, 'breathe');
   return new Promise((resolve, reject) => {
     const signal = run.signal, promptController = new AbortController(), hold = new AbortController();
     let promptDone = Promise.resolve(), settled = false;
@@ -400,7 +400,7 @@ function stopVideo() {
 }
 function showStandby() {
   view('<div class="eyebrow">自主决策能力评估 / 07</div>' + orb + '<h1 class="standby">按任意按钮开始</h1><p class="prompt">请先就座</p>', 'P0');
-  keys(['left', 'right', 'third']);
+  keys(['left', 'right', 'third'], 'breathe');
 }
 function clearChrome() {
   accept = null; redVisible = false; keys();

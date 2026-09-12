@@ -14,7 +14,12 @@
   --key-red-glow: #e24a4259;
 }
 #narrative { max-width: 860px; }
-#keys { display: flex; align-items: center; justify-content: center; min-height: 28px; }
+footer { position: relative; }
+#keys {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  display: flex; align-items: center; justify-content: center; min-height: 28px;
+  z-index: 1; white-space: nowrap;
+}
 .key { display: inline-flex; align-items: center; gap: 8px; margin: 0 12px; opacity: 1; color: inherit; }
 .key b { display: none; }
 .key-cap {
@@ -33,13 +38,18 @@
 .key--white { --key-stroke: var(--key-white-dim); --key-glow: var(--key-white-glow); --key-label: var(--key-white-label); --key-lit: var(--key-white); }
 .key--yellow { --key-stroke: var(--key-yellow-dim); --key-glow: var(--key-yellow-glow); --key-label: var(--key-yellow-label); --key-lit: var(--key-yellow); }
 .key--red { --key-stroke: var(--key-red-dim); --key-glow: var(--key-red-glow); --key-label: var(--key-red-label); --key-lit: var(--key-red); }
-.key.is-idle { opacity: .72; }
-.key.is-active, .key.is-breathe { --key-stroke: var(--key-lit); }
-.key.is-active .key-cap, .key.is-breathe .key-cap { box-shadow: 0 0 10px var(--key-glow), 0 0 22px var(--key-glow); }
-.key.is-breathe .key-cap { animation: keyBreathe 4s ease-in-out infinite; }
+.key.is-idle { opacity: .5; }
+.key.is-idle .key-cap { box-shadow: none; animation: none; }
+.key.is-active, .key.is-breathe { --key-stroke: var(--key-lit); opacity: 1; }
+.key.is-breathe .key-name { color: var(--key-lit); }
+.key.is-active .key-cap, .key.is-breathe .key-cap {
+  box-shadow: 0 0 10px var(--key-glow), 0 0 22px var(--key-glow);
+}
+.key.is-breathe .key-cap { animation: keyBreathe 2.2s ease-in-out infinite; }
 .key.is-press .key-cap { animation: keyPress .15s ease-out; }
 @keyframes keyBreathe {
-  50% { box-shadow: 0 0 6px var(--key-glow), 0 0 14px transparent; opacity: .7; }
+  0%, 100% { box-shadow: 0 0 8px var(--key-glow), 0 0 16px var(--key-glow); filter: brightness(1); }
+  50% { box-shadow: 0 0 18px var(--key-lit), 0 0 36px var(--key-glow); filter: brightness(1.4); }
 }
 @keyframes keyPress {
   40% { transform: scale(.92); filter: brightness(1.55); box-shadow: 0 0 16px var(--key-lit); }

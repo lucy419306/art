@@ -85,6 +85,8 @@ test('key language renders labeled hollow caps and omits unrequested colors', ()
   assert.doesNotMatch(p9r, /白键/);
   assert.doesNotMatch(p9r, /黄键/);
   assert.match(keys.panels({ left: '放弃', right: '恢复' }), /放弃[\s\S]*恢复/);
+  assert.match(keys.bar(['left', 'right'], 'idle'), /is-idle/);
+  assert.match(keys.bar(['left', 'right'], 'breathe'), /is-breathe/);
 });
 test('P7 detect page uses four pause beats and no glitch config', () => {
   const h = harness();
