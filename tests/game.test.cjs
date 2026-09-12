@@ -957,6 +957,7 @@ test('P9R plays override sfx 0.1s before countdown bar appears and red button sf
   const redAudio = h.audios.find(a => a.path === p9rRedButtonAudio);
   assert.ok(redAudio && !redAudio.paused, 'P9R red button sfx must play when pressing red key');
   assert.equal(redAudio.loop, undefined, 'Red button sfx must be non-loop');
+  assert.equal(overrideAudio.paused, true, 'P9R countdown sfx must stop immediately after pressing the red key');
 });
 
 test('ending B plays same audio as ending C across certificate ceremony', async () => {
@@ -1015,7 +1016,6 @@ test('ending B plays same audio as ending C across certificate ceremony', async 
   await h.until(() => h.audios.some(a => a.path === voice('c.luck')));
   assert.ok(h.audios.some(a => a.path === voice('c.luck')), 'c.luck must play after sealing in ending B');
 });
-
 
 
 

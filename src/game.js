@@ -87,7 +87,7 @@ async function say(id, { el = sub, fallback, signal = run.signal } = {}) {
     onFallback: showFallback
   });
 }
-const sfx = (id, fallback = 0, volume) => devMuted ? Promise.resolve() : media.play('sfx', id, fallback, run.signal, null, volume);
+const sfx = (id, fallback = 0, volume, signal = run.signal) => devMuted ? Promise.resolve() : media.play('sfx', id, fallback, signal, null, volume);
 function background(id, volume) { if (!devMuted) media.backgroundTrack(id, run.signal, volume); }
 
 function choice(valid, timeout, promptAt, promptId) {
@@ -422,7 +422,11 @@ async function rejected(sid = session) {
   await view(heading('ASSESSMENT REPORT / 07', '申请已驳回') + '<table class="report"><tr><td>自主决策风险</td><td>高</td></tr><tr><td>后悔耐受度</td><td>低</td></tr><tr><td>情绪波动</td><td>高</td></tr><tr><td>决策效率</td><td>43%</td></tr></table>', 'P9R');
   await say('r.sorry'); await say('r.unfit'); await pause();
   await say('r.common'); await pause(); await say('r.reject'); await pause(); await say('r.override');
-  sfx('p9r.override').catch(e => { if (e.message !== 'reset') console.error(e); });
+  // 倒计时氛围音只属于当前抉择页；确认或超时离页时必须立即停止。
+  const overrideSfx = new AbortController();
+  const stopOverrideSfx = () => overrideSfx.abort();
+  run.signal.addEventListener('abort', stopOverrideSfx, { once: true });
+  sfx('p9r.override', 0, undefined, overrideSfx.signal).catch(e => { if (e.message !== 'reset') console.error(e); });
   await wait(100);
   await view('<div class="p9r-choice"><h1 class="p9r-lead"><strong>若想强制拥有决策权</strong><span>可按下红键</span></h1><div class="override-meter"><div class="override-meter-label">请做出抉择</div><div class="countdown-track"><div id="countdown"></div></div></div></div>');
   redVisible = true;
@@ -431,6 +435,8 @@ async function rejected(sid = session) {
   document.querySelector('#countdown').style.setProperty('--countdown-ms', `${C.rejectionTimeout * C.speed}ms`);
   document.querySelector('#countdown').classList.add('running');
   const a = await choice(['third'], C.rejectionTimeout);
+  stopOverrideSfx();
+  run.signal.removeEventListener('abort', stopOverrideSfx);
   guard(sid);
   if (a === 'third') return contract(sid);
   await say('r.noRequest'); await say('r.maintain'); await endingA('A1', sid);
