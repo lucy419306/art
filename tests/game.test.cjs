@@ -216,12 +216,12 @@ test('short MP3 also replaces fallback instead of imposing a three-second minimu
   await h.until(s => s.cueId === 'p2.card1'); const t = h.now;
   await h.until(s => s.cueId === 'p2.card2'); assert.equal(h.now - t, 500 + h.ctx.GAME_CONFIG.sceneFade);
 });
-test('contract five-second timer starts after MP3; one-time accept prompt is not repeated', async () => {
+test('contract five-second timer starts after first term MP3; accept prompt is not spoken', async () => {
   const h = harness({ [voice('b.term1')]: 11000, [voice('b.accept')]: 1000 }); await toContract(h);
   await h.until(s => s.cueId === 'b.term1'); const t = h.now;
   await reach(h, 'P10B'); assert.equal(h.now - t, 11000); await h.step(); assert.equal(h.now - t, 16000);
   await reach(h, 'P10B'); await h.key('ArrowRight'); await reach(h, 'P10B');
-  assert.equal(h.audios.filter(a => a.path === voice('b.accept')).length, 1);
+  assert.equal(h.audios.filter(a => a.path === voice('b.accept')).length, 0);
 });
 test('long reminder finishes before automatic choice; manual choice interrupts it immediately', async () => {
   for (const manual of [false, true]) {
