@@ -81,7 +81,7 @@ window.GAME_ASSETS = { voice: {}, sfx: {}, bgm: {}, video: { intro: '../assets/v
 for (const id of Object.keys(GAME_DIALOGUE)) {
   GAME_ASSETS.voice[id] = `../assets/voice/${id.startsWith('a.') ? 'guidance' : 'evaluation'}/${id}.mp3`;
 }
-for (const id of ['beep', 'thud', 'tick', 'ready', 'paper', 'confirm', 'stamp', 'switch']) {
+for (const id of ['beep', 'thud', 'tick', 'ready', 'paper', 'confirm', 'stamp', 'switch', 'glitch']) {
   GAME_ASSETS.sfx[id] = `../assets/sfx/${id}.mp3`;
 }
 for (const id of ['evaluation', 'guidance', 'certificate']) GAME_ASSETS.bgm[id] = `../assets/bgm/${id}.mp3`;

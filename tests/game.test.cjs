@@ -14,7 +14,7 @@ function harness(audioFiles = {}) {
       classList: { add() {}, remove() {} },
       append(child) { this.children.push(child); }, insertAdjacentHTML() {},
       querySelector() { return el(); }, querySelectorAll() { return [el(), el(), el()]; },
-      remove() {}, pause() {}, load() {}, removeAttribute() {}
+      remove() {}, pause() {}, load() {}, removeAttribute() {}, setAttribute() {}
     };
   }
   const doc = { body: el(), querySelector: s => {
@@ -85,6 +85,13 @@ test('key language renders labeled hollow caps and omits unrequested colors', ()
   assert.doesNotMatch(p9r, /白键/);
   assert.doesNotMatch(p9r, /黄键/);
   assert.match(keys.panels({ left: '放弃', right: '恢复' }), /放弃[\s\S]*恢复/);
+});
+test('P7 blank beat constants: 2.3s four-beat, empty fragment slot', () => {
+  const h = harness();
+  const G = h.ctx.GAME_CONFIG.p7Glitch;
+  assert.equal(G.dip + G.noise + G.blank + G.restore, 2300);
+  assert.equal(G.fragment, '');
+  assert.ok(G.band >= 500);
 });
 test('all eight combinations: only all-white answers pass', () => {
   const { passes } = require('../src/rules.js');

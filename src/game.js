@@ -47,7 +47,7 @@ async function say(id, { el = sub, fallback, signal = run.signal } = {}) {
     type(el, text, Math.min(C.typeMs * C.speed, Math.max(0, duration - 350) / Math.max(1, text.length)));
   });
 }
-const sfx = (id, fallback = 0) => devMuted ? Promise.resolve() : media.play('sfx', id, fallback, run.signal);
+const sfx = (id, fallback = 0, volume) => devMuted ? Promise.resolve() : media.play('sfx', id, fallback, run.signal, undefined, volume);
 function background(id, volume) { if (!devMuted) media.backgroundTrack(id, run.signal, volume); }
 
 function choice(valid, timeout, promptAt, promptId) {
@@ -146,12 +146,22 @@ async function question(i) {
   const yellow = [['真正喜欢的工作', '收入较低', '成功概率 31%'], ['婚姻匹配度 52%', '预计持续 4 年', '但你爱这个人'], ['保留记忆']];
   const id = `P${5 + i}`;
   if (i === 2) {
+    keys();
     view(heading('MEMORY DETECTED', '系统检测到一段高痛苦记忆。'), id);
-    await wait(3000); media.stopBackground(); document.body.classList.add('black');
-    await wait(1000); document.body.classList.remove('black'); background('evaluation');
+    await wait(3000);
+    await p7Glitch(session);
   }
   view(cards(`第${['一', '二', '三'][i]}题：${names[i]}`, white[i], yellow[i]), id);
+  if (i === 2) {
+    document.body.classList.remove('p7-blank');
+    document.body.classList.add('p7-restore');
+    background('evaluation');
+  }
   keys(['left', 'right']);
+  if (i === 2) {
+    await wait(C.p7Glitch.restore);
+    document.body.classList.remove('p7-restore');
+  }
   await say(`${id}.intro`); await pause(); await say(`${id}.choose`);
   let a = await choice(['left', 'right'], C.questionTimeout, C.questionPrompt, `${id}.prompt`);
   if (a === 'timeout') { a = 'right'; await say(`${id}.auto`); }
@@ -381,8 +391,52 @@ function showStandby() {
   view('<div class="eyebrow">自主决策能力评估 / 07</div>' + orb + '<h1 class="standby">按任意按钮开始</h1><p class="prompt">请先就座</p>', 'P0');
   keys(['left', 'right', 'third']);
 }
+function bgVolume(v) {
+  if (media.background && media.background.audio) media.background.audio.volume = v;
+}
+function clearP7Glitch() {
+  document.querySelectorAll('.p7-band, .p7-fragment').forEach(el => el.remove());
+  document.body.classList.remove('p7-dip', 'p7-glitch', 'p7-blank', 'p7-restore');
+}
+async function p7Glitch(sid = session) {
+  const G = C.p7Glitch;
+  document.body.style.setProperty('--p7-dip-ms', `${G.dip * C.speed}ms`);
+  document.body.style.setProperty('--p7-restore-ms', `${G.restore * C.speed}ms`);
+  document.body.style.setProperty('--p7-noise-ms', `${G.noise * C.speed}ms`);
+  document.body.style.setProperty('--p7-band-ms', `${G.band * C.speed}ms`);
+  document.body.style.setProperty('--p7-fragment-ms', `${G.fragmentMs * C.speed}ms`);
+  keys();
+  document.body.classList.add('p7-dip');
+  bgVolume(0.06);
+  await wait(G.dip);
+  guard(sid);
+  document.body.classList.remove('p7-dip');
+  document.body.classList.add('p7-glitch');
+  bgVolume(0.03);
+  const band = document.createElement('div');
+  band.className = 'p7-band';
+  band.setAttribute('aria-hidden', 'true');
+  document.body.append(band);
+  const frag = typeof G.fragment === 'string' ? G.fragment.trim() : '';
+  if (frag) {
+    const el = document.createElement('p');
+    el.className = 'p7-fragment';
+    el.textContent = frag;
+    document.body.append(el);
+  }
+  sfx('glitch', 0, G.sfxVolume).catch(() => {});
+  await wait(G.noise);
+  guard(sid);
+  document.querySelectorAll('.p7-band, .p7-fragment').forEach(el => el.remove());
+  document.body.classList.remove('p7-glitch');
+  document.body.classList.add('p7-blank');
+  media.stopBackground();
+  await wait(G.blank);
+  guard(sid);
+}
 function clearChrome() {
   accept = null; redVisible = false; keys();
+  clearP7Glitch();
   document.body.className = ''; stage.className = ''; sub.className = ''; stopVideo();
   document.querySelector('#signature').textContent = '评估室 07';
 }

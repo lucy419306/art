@@ -263,3 +263,73 @@
   .certificate-future { font-size: 14px; letter-spacing: 4px; gap: 12px; }
   .certificate-future i { width: 48px; }
 }
+
+/* P7 留白：压黑 → 轻度信号不良 → 纯净留白 → 回场。无高频闪烁。 */
+.p7-dip {
+  transition: background var(--p7-dip-ms, .3s) ease;
+  background: #000;
+}
+.p7-dip .frame,
+.p7-dip #subtitle,
+.p7-dip footer,
+.p7-dip:before {
+  transition: opacity var(--p7-dip-ms, .3s) ease;
+  opacity: 0;
+}
+.p7-dip .grain {
+  transition: opacity var(--p7-dip-ms, .3s) ease;
+  opacity: .06;
+}
+.p7-glitch,
+.p7-blank { background: #000; }
+.p7-glitch:before,
+.p7-blank:before { opacity: 0; }
+.p7-glitch .frame,
+.p7-glitch #subtitle,
+.p7-glitch footer,
+.p7-blank .frame,
+.p7-blank #subtitle,
+.p7-blank footer,
+.p7-blank .grain { opacity: 0; visibility: hidden; }
+.p7-glitch .grain { opacity: .22; }
+.p7-glitch { animation: p7Pulse var(--p7-noise-ms, 1.2s) ease-in-out 1 both; }
+.p7-band {
+  position: fixed; left: -4%; right: -4%; height: 16vh; top: -18vh;
+  background: linear-gradient(180deg, transparent, rgba(176, 196, 204, .1), transparent);
+  filter: blur(10px);
+  pointer-events: none;
+  z-index: 8;
+  animation: p7Band var(--p7-band-ms, .7s) linear infinite;
+}
+.p7-fragment {
+  position: fixed; left: 50%; top: 46%; transform: translate(-50%, -50%);
+  margin: 0; padding: 0; max-width: 70vw;
+  font-family: 'Times New Roman', 'Songti SC', 'STSong', serif;
+  font-style: italic; font-weight: 400; font-size: 15px;
+  letter-spacing: .12em; line-height: 1.6; color: #b9b1a2;
+  opacity: 0; pointer-events: none; z-index: 9;
+  animation: p7Frag var(--p7-fragment-ms, .7s) ease both;
+}
+.p7-restore .frame { animation: p7FadeIn var(--p7-restore-ms, .4s) ease both; }
+.p7-restore h1,
+.p7-restore h2,
+.p7-restore .card,
+.p7-restore .prompt,
+.p7-restore #keys { animation: p7FadeIn var(--p7-restore-ms, .4s) ease both; }
+@keyframes p7Band {
+  from { transform: translateY(0); }
+  to { transform: translateY(132vh); }
+}
+@keyframes p7Pulse {
+  0%, 100% { filter: brightness(1); }
+  42% { filter: brightness(.88); }
+}
+@keyframes p7FadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes p7Frag {
+  0%, 100% { opacity: 0; }
+  18% { opacity: .26; }
+  62% { opacity: .2; }
+}

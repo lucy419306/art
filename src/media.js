@@ -68,12 +68,13 @@ class GameMedia {
       if (!this.paused) this._arm(job);
     });
   }
-  async play(kind, id, fallback, signal, onDuration) {
+  async play(kind, id, fallback, signal, onDuration, volume) {
     if (signal.aborted) throw new Error('reset');
     const path = this.path(kind, id);
     if (!path) return this.delay(fallback, signal);
     const completed = await new Promise((resolve, reject) => {
       const audio = new Audio(path);
+      if (volume != null) audio.volume = volume;
       audio.playbackRate = this.rate;
       this.playing.add(audio);
       let done = false, watchdog;
