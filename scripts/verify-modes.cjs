@@ -6,6 +6,7 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+const fullscreenRequests = [];
 
 ipcMain.handle('assets:list', async () => {
   const result = [];
@@ -18,6 +19,11 @@ ipcMain.handle('assets:list', async () => {
   }
   await walk('assets');
   return result;
+});
+ipcMain.on('window:fullscreen-request', (event, on) => {
+  fullscreenRequests.push(!!on);
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win && !win.isDestroyed()) win.setFullScreen(!!on);
 });
 
 async function inspect(win, dev) {
@@ -36,7 +42,14 @@ async function inspect(win, dev) {
   await until("gameStatus().phase === 'P0'");
   assert.equal(await evaluate("Object.keys(GAME_VOICE_CUES).length"), 79);
   assert.equal(await evaluate("!!document.querySelector('#dev-panel')"), dev);
+  assert.equal(await evaluate("typeof windowControls.setFullScreen"), 'function');
   assert.ok(await evaluate("!!media.path('voice', 'p4.meaning')"));
+
+  const requestStart = fullscreenRequests.length;
+  await evaluate("window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Digit9', key: '9' }))");
+  await evaluate("window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Digit0', key: '0' }))");
+  for (let i = 0; i < 80 && fullscreenRequests.length < requestStart + 2; i++) await delay(25);
+  assert.deepEqual(fullscreenRequests.slice(requestStart), [true, false]);
 
   await evaluate(`(() => {
     window.__modeSmoke = new AbortController();

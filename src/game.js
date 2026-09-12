@@ -458,7 +458,7 @@ async function finish(id, sid = session) {
   stage.classList.remove('stage-leave');
 }
 function launch(fn) {
-  fn().catch(e => { if (e.message !== 'reset') { console.error(e); sub.textContent = '运行异常，请按 F1 复位。'; } });
+  fn().catch(e => { if (e.message !== 'reset') { console.error(e); sub.textContent = '运行异常，请按数字键 1 复位。'; } });
 }
 function stopVideo() {
   const video = document.querySelector('#video'); video.pause(); video.removeAttribute('src'); video.load();
@@ -537,7 +537,10 @@ window.setDevPaused = on => {
 };
 window.addEventListener('keydown', e => {
   if (typeof window.__devKey === 'function' && window.__devKey(e)) return;
-  if (e.code === 'F1') { e.preventDefault(); if (!e.repeat) reset(true); return; }
+  const plain = !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey;
+  if (plain && (e.code === 'Digit1' || e.code === 'Numpad1')) { e.preventDefault(); if (!e.repeat) reset(true); return; }
+  if (plain && (e.code === 'Digit9' || e.code === 'Numpad9')) { e.preventDefault(); if (!e.repeat) window.windowControls?.setFullScreen(true); return; }
+  if (plain && (e.code === 'Digit0' || e.code === 'Numpad0')) { e.preventDefault(); if (!e.repeat) window.windowControls?.setFullScreen(false); return; }
   if (!ready || e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
   const key = GameRules.key(e.code); if (!key) return; e.preventDefault();
   if (phase === 'P0') {
