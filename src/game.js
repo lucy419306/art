@@ -79,10 +79,13 @@ function choice(valid, timeout, promptAt, promptId) {
 
 async function sceneP1(key, sid) {
   guard(sid);
-  background('evaluation');
+  if (!media.background) background('standby', 0.25);
   keys();
   view(orb.replace('orb', 'orb frozen'), 'P1');
-  await wait(200); await wait(300);
+  await wait(100);
+  guard(sid);
+  sfx('p1.start').catch(e => { if (e.message !== 'reset') console.error(e); });
+  await wait(100); await wait(300);
   guard(sid);
   stage.insertAdjacentHTML('beforeend', '<div class="scan"></div>');
   await wait(1000);
@@ -93,6 +96,8 @@ async function sceneP1(key, sid) {
 }
 async function sceneP2(sid) {
   guard(sid);
+  media.stopBackground();
+  background('evaluation');
   const video = document.querySelector('#video'), videoPath = media.path('video', 'intro');
   if (videoPath) { video.src = videoPath; video.loop = true; video.muted = true; video.play().catch(() => {}); }
   for (let i = 0; i < 7; i++) {
@@ -429,6 +434,7 @@ function enterBeat(id, preset) {
   clearChrome();
   if (id === 'P0' || id === 'P12') {
     showStandby();
+    background('standby', 0.25);
     const signal = run.signal;
     launch(async () => {
       if (id === 'P12' && media.path('voice', 'p12.reset')) await say('p12.reset', { signal });
@@ -455,7 +461,11 @@ window.addEventListener('keydown', e => {
   if (!ready || e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
   const key = GameRules.key(e.code); if (!key) return; e.preventDefault();
   if (phase === 'P0') {
-    session++; run.abort(); run = new AbortController();
+    session++;
+    const nextRun = new AbortController();
+    media.rebindBackground(nextRun.signal);
+    run.abort();
+    run = nextRun;
     launch(() => start(key));
   } else accept?.(key);
 });

@@ -234,3 +234,32 @@ test('F1 stops long narration, reminder and background; certificate reset leaves
   await c.key('F1'); await c.key('ArrowLeft'); await reach(c, 'P5');
   assert.equal(c.ctx.gameStatus().certificateState, null); assert.equal(c.ctx.gameStatus().answers.length, 0);
 });
+test('P0 standby loops across P1 and stops upon reaching P2; P1 start sfx plays', async () => {
+  const standbyPath = '../assets/sfx/P0待机持续.mp3';
+  const p1Path = '../assets/sfx/P1启动.mp3';
+  const h = harness({
+    [standbyPath]: 8000,
+    [p1Path]: 2660,
+    [voice('p1.detect')]: 1000
+  });
+  // 刚启动在 P0，待机持续音已在循环播放
+  await h.flush();
+  const standbyAudio = h.audios.find(a => a.path === standbyPath);
+  assert.ok(standbyAudio, 'standby audio should be loaded');
+  assert.equal(standbyAudio.paused, false, 'standby audio should be playing in P0');
+  assert.equal(standbyAudio.loop, true, 'standby audio should loop');
+
+  // 按键进入 P1，P0 待机持续音必须继续播放，且延迟 0.1 秒（100ms）触发 P1 启动音效
+  const keyTime = h.now;
+  await h.key('ArrowLeft');
+  assert.equal(h.ctx.gameStatus().phase, 'P1');
+  assert.equal(standbyAudio.paused, false, 'standby audio must keep playing during P1');
+  await h.until(() => h.audios.some(a => a.path === p1Path));
+  assert.equal(h.now - keyTime, 100, 'P1 start audio should be delayed by exactly 100ms');
+  const p1Audio = h.audios.find(a => a.path === p1Path);
+  assert.equal(p1Audio.paused, false, 'P1 start audio should be playing');
+
+  // 等待直到进入 P2，待机持续音必须停止
+  await h.until(s => s.cueId === 'p2.card1');
+  assert.equal(standbyAudio.paused, true, 'standby audio must stop once P2 starts');
+});

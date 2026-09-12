@@ -9,6 +9,7 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron . --dev",
+    "both": "electron . --both",
     "test": "node --test tests/*.test.cjs",
     "assets:list": "node scripts/generate-assets.cjs",
     "pack:mac": "electron-builder --mac dir",

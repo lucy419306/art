@@ -1,5 +1,6 @@
 (function () {
   if (typeof location === 'undefined' || !new URLSearchParams(location.search).has('dev')) return;
+  document.title = '最后一次选择 · 管理者模式';
   const beats = window.GAME_BEATS || [];
   const known = window.__devKnownBeats;
   beats.forEach(b => { if (known && !known.has(b.id)) console.warn('dev: beat has no handler', b.id); });

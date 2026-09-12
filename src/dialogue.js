@@ -84,4 +84,6 @@ for (const id of Object.keys(GAME_DIALOGUE)) {
 for (const id of ['beep', 'thud', 'tick', 'ready', 'paper', 'confirm', 'stamp', 'switch']) {
   GAME_ASSETS.sfx[id] = `../assets/sfx/${id}.mp3`;
 }
+GAME_ASSETS.sfx['p1.start'] = '../assets/sfx/P1启动.mp3';
 for (const id of ['evaluation', 'guidance', 'certificate']) GAME_ASSETS.bgm[id] = `../assets/bgm/${id}.mp3`;
+GAME_ASSETS.bgm['standby'] = '../assets/sfx/P0待机持续.mp3';

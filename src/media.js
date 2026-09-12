@@ -8,7 +8,18 @@ class GameMedia {
   path(kind, id) {
     const override = this.config.assets[kind]?.[id];
     const path = override === undefined ? GAME_ASSETS[kind]?.[id] : override;
-    return path && this.inventory.has(path) ? path : null;
+    if (path && this.inventory.has(path)) return path;
+    if (kind === 'bgm' && id === 'standby') {
+      for (const p of ['../assets/sfx/P0待机持续.mp3', '../assets/bgm/P0待机持续.mp3', '../assets/sfx/standby.mp3', '../assets/bgm/standby.mp3']) {
+        if (this.inventory.has(p)) return p;
+      }
+    }
+    if (kind === 'sfx' && (id === 'p1.start' || id === 'p1')) {
+      for (const p of ['../assets/sfx/P1启动.mp3', '../assets/sfx/p1.start.mp3', '../assets/sfx/p1.mp3']) {
+        if (this.inventory.has(p)) return p;
+      }
+    }
+    return null;
   }
   _arm(job) {
     job.started = Date.now();
@@ -110,6 +121,12 @@ class GameMedia {
     this.background.audio.pause();
     this.background.signal.removeEventListener('abort', this.background.stop);
     this.background = null;
+  }
+  rebindBackground(newSignal) {
+    if (!this.background) return;
+    this.background.signal.removeEventListener('abort', this.background.stop);
+    this.background.signal = newSignal;
+    newSignal.addEventListener('abort', this.background.stop, { once: true });
   }
   backgroundTrack(id, signal, volume = 0.2) {
     this.stopBackground();
