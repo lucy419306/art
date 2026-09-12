@@ -68,6 +68,11 @@ function harness(audioFiles = {}) {
 }
 const voiceCues = require('../src/voice-cues.js');
 const voice = id => voiceCues[id].file;
+test('WithoutText variant makes only the bottom subtitle layer fully transparent', () => {
+  const css = fs.readFileSync('src/style.css', 'utf8');
+  assert.match(css, /#subtitle\{opacity:0\}/);
+  assert.doesNotMatch(css, /#stage\{[^}]*opacity:0/);
+});
 const reach = (h, phase) => h.until(s => s.phase === phase && s.waiting);
 async function questions(h, choices) {
   await h.key('ArrowLeft');
