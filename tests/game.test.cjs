@@ -11,10 +11,15 @@ function harness(audioFiles = {}) {
     return {
       innerHTML: '', textContent: '', className: '', children: [], values: {},
       style: { setProperty() {} },
-      classList: { add() {}, remove() {} },
+      classList: {
+        _n: new Set(),
+        add(...xs) { xs.forEach(x => this._n.add(x)); },
+        remove(...xs) { xs.forEach(x => this._n.delete(x)); },
+        contains(x) { return this._n.has(x); }
+      },
       append(child) { this.children.push(child); }, insertAdjacentHTML() {},
       querySelector() { return el(); }, querySelectorAll() { return [el(), el(), el()]; },
-      remove() {}, pause() {}, load() {}, removeAttribute() {}, setAttribute() {}
+      remove() {}, pause() {}, load() {}, getAttribute() { return null; }, removeAttribute() {}, setAttribute() {}
     };
   }
   const doc = { body: el(), querySelector: s => {
@@ -109,7 +114,8 @@ test('C: yellow final choice unfolds certificate; any key accepts then resets af
   await h.key('Space');
   await h.until(s => s.certificateState === 'signing'); assert.equal(h.ctx.gameStatus().waiting, false);
   await h.until(s => s.ending === 'C'); assert.equal(h.ctx.gameStatus().certificateState, 'complete');
-  const t = h.now; await h.step(); assert.equal(h.now - t, 30000); assert.equal(h.ctx.gameStatus().phase, 'P0');
+  const fade = h.ctx.GAME_CONFIG.sceneFade;
+  const t = h.now; await h.until(s => s.phase === 'P0'); assert.equal(h.now - t, 30000 + fade);
   assert.equal(h.audios.length, 0); assert.deepEqual(h.errors, []);
 });
 test('C: certificate auto-accepts after 15s if no key', async () => {
@@ -192,10 +198,11 @@ test('standby accepts any of three keys; held keys cannot start; F1 cancels open
 });
 test('P1 adds 2 seconds after narration; P2 absent MP3 cards each last 3 seconds', async () => {
   const h = harness(); await h.key('ArrowLeft'); await h.until(s => s.cueId === 'p1.detect');
-  const t = h.now; await h.until(s => s.cueId === 'p2.card1'); assert.equal(h.now - t, 5000);
+  const fade = h.ctx.GAME_CONFIG.sceneFade;
+  const t = h.now; await h.until(s => s.cueId === 'p2.card1'); assert.equal(h.now - t, 5000 + fade);
   for (let i = 1; i <= 7; i++) {
     const start = h.now; await h.until(s => s.cueId === (i === 7 ? 'p2.welcome' : `p2.card${i + 1}`));
-    assert.equal(h.now - start, 3000);
+    assert.equal(h.now - start, 3000 + (i === 7 ? 0 : fade));
   }
 });
 test('long MP3 replaces fallback; question countdown starts after voice ends', async () => {
@@ -207,7 +214,7 @@ test('long MP3 replaces fallback; question countdown starts after voice ends', a
 test('short MP3 also replaces fallback instead of imposing a three-second minimum', async () => {
   const h = harness({ [voice('p2.card1')]: 500 }); await h.key('ArrowLeft');
   await h.until(s => s.cueId === 'p2.card1'); const t = h.now;
-  await h.until(s => s.cueId === 'p2.card2'); assert.equal(h.now - t, 500);
+  await h.until(s => s.cueId === 'p2.card2'); assert.equal(h.now - t, 500 + h.ctx.GAME_CONFIG.sceneFade);
 });
 test('contract five-second timer starts after MP3; one-time accept prompt is not repeated', async () => {
   const h = harness({ [voice('b.term1')]: 11000, [voice('b.accept')]: 1000 }); await toContract(h);

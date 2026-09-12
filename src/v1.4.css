@@ -14,6 +14,18 @@
   --key-red-glow: #e24a4259;
 }
 #narrative { max-width: 860px; }
+#stage { transition: opacity var(--scene-fade-ms, .28s) ease; }
+#stage.stage-leave { opacity: 0; }
+#keys .key { animation: sceneIn .35s ease both; }
+.overlay { animation: sceneIn .4s ease both; }
+.overlay.is-leave { animation: fadeOut .28s ease forwards; }
+.check { animation: sceneIn .35s ease both; }
+.p9r-choice { animation: sceneIn .45s ease both; }
+header, .rail, footer, body:before { transition: opacity .45s ease; }
+.minimal header, .minimal .rail, .minimal footer { opacity: 0; visibility: visible; pointer-events: none; }
+.guide-lock-on .frame { animation: sceneIn .8s ease both; }
+@keyframes sceneIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeOut { to { opacity: 0; } }
 footer { position: relative; }
 #keys {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);

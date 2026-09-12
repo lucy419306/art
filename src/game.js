@@ -19,12 +19,38 @@ const fallbackFor = text => Math.max(C.lineFallback, text.length * C.typeMs + 12
 function type(el, text, step = C.typeMs * C.speed) {
   el.innerHTML = [...text].map((c, i) => `<span class="char" style="animation-delay:${i * step}ms">${esc(c)}</span>`).join('');
 }
-function view(html, id = phase) {
+function paint(html, id = phase) {
   phase = id;
   if (id) currentBeat = id;
   document.querySelector('#phase').textContent = phase === 'P0' ? 'SYSTEM STANDBY' : `SESSION / ${phase}`;
   stage.innerHTML = html;
   sub.textContent = '';
+}
+async function leaveStage() {
+  if (!stage.innerHTML.trim() || stage.classList.contains('stage-leave')) return;
+  document.body.style.setProperty('--scene-fade-ms', `${(C.sceneFade || 280) * C.speed}ms`);
+  stage.classList.add('stage-leave');
+  sub.textContent = '';
+  try { await wait(C.sceneFade); }
+  catch (e) { stage.classList.remove('stage-leave'); throw e; }
+  if (!live()) { stage.classList.remove('stage-leave'); throw new Error('reset'); }
+}
+async function view(html, id = phase, instant = false) {
+  document.body.style.setProperty('--scene-fade-ms', `${(C.sceneFade || 280) * C.speed}ms`);
+  if (id) { phase = id; currentBeat = id; }
+  if (!instant) await leaveStage();
+  paint(html, id);
+  if (stage.classList.contains('stage-leave')) {
+    void stage.offsetWidth;
+    stage.classList.remove('stage-leave');
+  }
+}
+async function dismissOverlay() {
+  const veil = stage.querySelector('.overlay');
+  if (!veil) return;
+  veil.classList.add('is-leave');
+  try { await wait(C.sceneFade); }
+  finally { veil.remove(); }
 }
 function keys(shown = [], state) {
   const el = document.querySelector('#keys');
@@ -81,13 +107,13 @@ async function sceneP1(key, sid) {
   guard(sid);
   background('evaluation');
   keys();
-  view(orb.replace('orb', 'orb frozen'), 'P1');
+  await view(orb.replace('orb', 'orb frozen'), 'P1');
   await wait(200); await wait(300);
   guard(sid);
   stage.insertAdjacentHTML('beforeend', '<div class="scan"></div>');
   await wait(1000);
   guard(sid);
-  view('<div class="eyebrow">APPLICANT DETECTED</div><h1 id="detected"></h1>');
+  await view('<div class="eyebrow">APPLICANT DETECTED</div><h1 id="detected"></h1>');
   await say('p1.detect', { el: document.querySelector('#detected') });
   await wait(C.startupPause);
 }
@@ -97,22 +123,21 @@ async function sceneP2(sid) {
   if (videoPath) { video.src = videoPath; video.loop = true; video.muted = true; video.play().catch(() => {}); }
   for (let i = 0; i < 7; i++) {
     guard(sid);
-    view(`<div class="eyebrow">ARCHIVE / ${String(i + 1).padStart(2, '0')}</div><h2 id="narrative"></h2>`, 'P2');
+    await view(`<div class="eyebrow">ARCHIVE / ${String(i + 1).padStart(2, '0')}</div><h2 id="narrative"></h2>`, 'P2');
     await say(`p2.card${i + 1}`, { el: document.querySelector('#narrative'), fallback: C.introDurations[i] });
   }
-  stopVideo();
   await say('p2.welcome');
 }
 async function sceneP4(sid) {
   guard(sid);
-  view(heading('ASSESSMENT PROTOCOL', '恢复自主权前，须完成三项决策模拟') + '<p>工作　 /　 爱情　 /　 记忆</p>', 'P4');
+  await view(heading('ASSESSMENT PROTOCOL', '恢复自主权前，须完成三项决策模拟') + '<p>工作　 /　 爱情　 /　 记忆</p>', 'P4');
   await say('p4.meaning'); await pause();
   await say('p4.simulations'); await pause();
   await say('p4.record');
 }
 async function sceneP8(sid) {
   guard(sid);
-  view('<div class="eyebrow">PROCESSING</div><h1 class="assess-copy">正在评估自主决策能力</h1><div class="orb assess"></div>', 'P8');
+  await view('<div class="eyebrow">PROCESSING</div><h1 class="assess-copy">正在评估自主决策能力</h1><div class="orb assess"></div>', 'P8');
   await wait(5000);
   guard(sid);
   if (GameRules.passes(answers)) await passed(sid); else await rejected(sid);
@@ -128,8 +153,16 @@ async function start(key) {
 }
 
 async function history() {
+  const video = document.querySelector('#video');
+  if (video && video.getAttribute('src')) {
+    video.style.transition = `opacity ${(C.sceneFade || 280) * C.speed}ms ease`;
+    video.style.opacity = '0';
+  }
+  await leaveStage();
   document.body.classList.add('history');
-  view(heading('DECISION HISTORY', '过去 18 年，系统已代替你完成：') + '<div class="data"></div>', 'P3');
+  await view(heading('DECISION HISTORY', '过去 18 年，系统已代替你完成：') + '<div class="data"></div>', 'P3', true);
+  stopVideo();
+  if (video) { video.style.transition = ''; video.style.opacity = ''; }
   for (const text of ['教育路径选择', '职业选择', '居住地选择', '健康决策', '社交关系优化', '伴侣匹配', '消费选择', '累计替代决策：11,204 次']) {
     const p = document.createElement('p');
     if (text.startsWith('累计')) p.className = 'total';
@@ -147,17 +180,17 @@ async function question(i) {
   const id = `P${5 + i}`;
   if (i === 2) {
     keys();
-    view(heading('MEMORY DETECTED', '系统检测到一段高痛苦记忆。'), id);
+    await view(heading('MEMORY DETECTED', '系统检测到一段高痛苦记忆。'), id);
     for (let n = 0; n < (C.p7BlankBeats || 4); n++) await pause();
   }
-  view(cards(`第${['一', '二', '三'][i]}题：${names[i]}`, white[i], yellow[i]), id);
+  await view(cards(`第${['一', '二', '三'][i]}题：${names[i]}`, white[i], yellow[i]), id);
   keys(['left', 'right']);
   await say(`${id}.intro`); await pause(); await say(`${id}.choose`);
   let a = await choice(['left', 'right'], C.questionTimeout, C.questionPrompt, `${id}.prompt`);
   if (a === 'timeout') { a = 'right'; await say(`${id}.auto`); }
   answers.push(a);
   // 选择事件后的同一轮微任务即显示反馈，不等待音效加载。
-  view(heading('RESPONSE RECORDED', '已记录。'), id);
+  await view(heading('RESPONSE RECORDED', '已记录。'), id);
   if (i === 0) {
     await Promise.all([a === 'right' ? sfx('thud') : Promise.resolve(), say(`${id}.${a}`)]);
   } else {
@@ -170,8 +203,8 @@ async function question(i) {
   }
 }
 
-function result(id = phase) {
-  view(heading('AUTONOMY RESTORED', '自主权已恢复') + '<p class="result">未来结果：无法预测</p>', id);
+async function result(id = phase) {
+  await view(heading('AUTONOMY RESTORED', '自主权已恢复') + '<p class="result">未来结果：无法预测</p>', id);
 }
 async function costs(prefix, gaps = true) {
   await say(prefix + '.errors'); if (gaps) await pause();
@@ -180,9 +213,9 @@ async function costs(prefix, gaps = true) {
 }
 async function passed(sid = session) {
   guard(sid);
-  view(heading('AUTONOMY APPROVED', '批准恢复自主权'), 'P9C');
+  await view(heading('AUTONOMY APPROVED', '批准恢复自主权'), 'P9C');
   await say('c.confirm'); await say('c.restored'); await pause(); await costs('c');
-  view(heading('DECISION SIMULATION', '最后一次确认：是否仍要恢复自主权？') + GameKeys.panels({ left: '放弃', right: '恢复' }) + '<p class="prompt">请选择</p>', 'P9C');
+  await view(heading('DECISION SIMULATION', '最后一次确认：是否仍要恢复自主权？') + GameKeys.panels({ left: '放弃', right: '恢复' }) + '<p class="prompt">请选择</p>', 'P9C');
   keys(['left', 'right']);
   await say('c.ask');
   const a = await choice(['left', 'right'], C.finalTimeout, C.finalPrompt, 'P9C.prompt');
@@ -195,20 +228,20 @@ async function passed(sid = session) {
 async function certificate(sid = session, endingId = 'C') {
   guard(sid);
   certificateState = 'transition';
-  if (endingId === 'C') { result('C'); await wait(1000); }
+  if (endingId === 'C') { await result('C'); await wait(1000); }
   document.body.classList.add('ceremony');
   stage.style.setProperty('--fade-ms', `${C.certificate.fade * C.speed}ms`);
   stage.classList.add('ceremony-fade');
   media.stopBackground();
   await wait(C.certificate.fade);
   stage.classList.remove('ceremony-fade');
-  view(`<article class="certificate collapsed" style="--unfold-ms:${C.certificate.expand * C.speed}ms;--draw-ms:${C.certificate.border * C.speed}ms">
+  await view(`<article class="certificate collapsed" style="--unfold-ms:${C.certificate.expand * C.speed}ms;--draw-ms:${C.certificate.border * C.speed}ms">
     <div class="cert-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
     <div class="cert-scan" aria-hidden="true"></div>
     <div id="certificate-content"></div>
     <div class="certificate-signatures"><span id="issuer-seal"></span><span id="receiver-seal"></span></div>
     <div id="final-seal"></div>
-  </article>`, endingId);
+  </article>`, endingId, true);
   const cert = document.querySelector('.certificate');
   const voices = (async () => { await say('c.final'); await pause(); await say('c.handover'); })();
   await wait(280);
@@ -279,10 +312,10 @@ async function certificate(sid = session, endingId = 'C') {
 
 async function rejected(sid = session) {
   guard(sid);
-  view(heading('ASSESSMENT REPORT / 07', '申请已驳回') + '<table class="report"><tr><td>自主决策风险</td><td>高</td></tr><tr><td>后悔耐受度</td><td>低</td></tr><tr><td>情绪波动</td><td>高</td></tr><tr><td>决策效率</td><td>43%</td></tr></table>', 'P9R');
+  await view(heading('ASSESSMENT REPORT / 07', '申请已驳回') + '<table class="report"><tr><td>自主决策风险</td><td>高</td></tr><tr><td>后悔耐受度</td><td>低</td></tr><tr><td>情绪波动</td><td>高</td></tr><tr><td>决策效率</td><td>43%</td></tr></table>', 'P9R');
   await say('r.sorry'); await say('r.unfit'); await pause();
   await say('r.common'); await pause(); await say('r.reject'); await pause(); await say('r.override');
-  view('<div class="p9r-choice"><h1 class="p9r-lead"><strong>若想强制拥有决策权</strong><span>可按下红键</span></h1><div class="override-meter"><div class="override-meter-label">请做出抉择</div><div class="countdown-track"><div id="countdown"></div></div></div></div>');
+  await view('<div class="p9r-choice"><h1 class="p9r-lead"><strong>若想强制拥有决策权</strong><span>可按下红键</span></h1><div class="override-meter"><div class="override-meter-label">请做出抉择</div><div class="countdown-track"><div id="countdown"></div></div></div></div>');
   redVisible = true;
   keys(['third']);
   await sfx('ready');
@@ -294,28 +327,31 @@ async function rejected(sid = session) {
   await say('r.noRequest'); await say('r.maintain'); await endingA('A1', sid);
 }
 
-function contractView(n) {
+async function contractView(n) {
   const terms = [1, 2, 3].map(i => GAME_DIALOGUE[`b.term${i}`]);
-  view('<div class="eyebrow">RESTORATION / CONSENT</div><h2>如仍要恢复自主权，请确认你接受以下全部后果：</h2><p class="prompt">若接受，请按任意按钮。</p><div class="contract">' + terms.slice(0, n + 1).map((t, i) => `<div class="check"><span>${i < n ? '✓' : '□'}</span>${t}</div>`).join('') + '</div>', 'P10B');
+  await view('<div class="eyebrow">RESTORATION / CONSENT</div><h2>如仍要恢复自主权，请确认你接受以下全部后果：</h2><p class="prompt">若接受，请按任意按钮。</p><div class="contract">' + terms.slice(0, n + 1).map((t, i) => `<div class="check"><span>${i < n ? '✓' : '□'}</span>${t}</div>`).join('') + '</div>', 'P10B', !!stage.querySelector('.contract'));
 }
 async function endingBCore(sid = session) {
   guard(sid);
   await say('b.promise'); media.stopBackground();
-  document.body.classList.add('minimal'); view(orb); await wait(3000);
+  await leaveStage();
+  document.body.classList.add('minimal');
+  await view(orb, 'B', true);
+  await wait(3000);
   guard(sid);
   document.body.classList.remove('minimal'); background('evaluation');
-  result('B'); await say('b.confirm'); await pause(); await costs('b', false);
+  await result('B'); await say('b.confirm'); await pause(); await costs('b', false);
   return certificate(sid, 'B');
 }
 async function contract(sid = session) {
   guard(sid);
   if (contractCount >= 3) return endingBCore(sid);
-  view(heading('OVERRIDE REQUEST', '检测到强制收回请求。'), 'P10B');
+  await view(heading('OVERRIDE REQUEST', '检测到强制收回请求。'), 'P10B');
   await say('b.detect'); await pause(); await say('b.risk');
-  contractView(0); keys(['left', 'right', 'third']); await say('b.accept');
+  await contractView(0); keys(['left', 'right', 'third']); await say('b.accept');
   while (contractCount < 3) {
     guard(sid);
-    contractView(contractCount);
+    await contractView(contractCount);
     keys(['left', 'right', 'third']);
     await say(`b.term${contractCount + 1}`);
     const waitMs = hesitate ? 1 : C.hesitationTimeout;
@@ -326,11 +362,11 @@ async function contract(sid = session) {
       keys(['left', 'right']);
       await say('b.hesitate'); await pause(); await say('b.want');
       const answer = await choice(['left', 'right'], C.hesitationAnswerTimeout);
-      if (answer === 'right') { await say('b.continue'); continue; }
+      if (answer === 'right') { await dismissOverlay(); await say('b.continue'); continue; }
       if (answer === 'timeout') { await say('a3.noAnswer'); await pause(); }
-      stage.querySelector('.overlay')?.remove();
+      await dismissOverlay();
       await say('a3.confirm'); await pause(); await say('a3.hesitation'); await pause();
-      view(heading('APPLICATION TERMINATED', '自主决策权申请：已终止'));
+      await view(heading('APPLICATION TERMINATED', '自主决策权申请：已终止'));
       await say('a3.stop'); return endingA('A3', sid);
     }
     contractCount++;
@@ -348,9 +384,10 @@ async function endingA(entry, sid = session, skipEntry = false) {
   media.stopBackground();
   document.body.style.setProperty('--guidance-enter-ms', `${C.guidanceEnter * C.speed}ms`);
   document.body.style.setProperty('--guidance-close-ms', `${C.guidanceClose * C.speed}ms`);
+  await leaveStage();
   document.body.classList.add('guidance');
   document.querySelector('#signature').textContent = '人生指导系统：运行中';
-  view(heading('YOUR PERSONAL GUIDANCE', '人生指导系统：运行中') + '<div class="timeline"></div>', 'P11');
+  await view(heading('YOUR PERSONAL GUIDANCE', '人生指导系统：运行中') + '<div class="timeline"></div>', 'P11', true);
   await Promise.all([sfx('switch', C.guidanceEnter), wait(C.guidanceEnter)]);
   background('guidance');
   if (!skipEntry) { await say('a.thanks'); await say('a.next'); }
@@ -367,17 +404,17 @@ async function endingA(entry, sid = session, skipEntry = false) {
   }
   await say('a.reassure'); await pause(); await say('a.decided');
   document.body.classList.add('closing'); await wait(C.guidanceClose);
-  document.body.classList.remove('guidance', 'closing');
   document.body.classList.add('minimal', 'guide-lock-on');
   document.body.style.setProperty('--guidance-lock-fade-ms', `${C.guidanceLockFade * C.speed}ms`);
-  view(`<div class="guide-lock" aria-label="人生指导系统：运行中">
+  await view(`<div class="guide-lock" aria-label="人生指导系统：运行中">
     <div class="guide-mark" aria-hidden="true">
       <i class="guide-orbit o1"></i><i class="guide-orbit o2"></i><i class="guide-orbit o3"></i>
       <i class="guide-ring"></i><i class="guide-core"></i>
     </div>
     <p class="guide-name">人生指导系统</p>
     <p class="guide-status">运行中</p>
-  </div>`, 'P11');
+  </div>`, 'P11', true);
+  document.body.classList.remove('guidance', 'closing');
   await wait(C.guidanceLock);
   document.body.classList.add('guide-lock-out');
   media.stopBackground();
@@ -390,7 +427,12 @@ async function finish(id, sid = session) {
   guard(sid);
   ending = id; keys(); await wait(C.resetTimeout);
   guard(sid);
+  try { await leaveStage(); } catch (e) { if (e.message !== 'reset') throw e; }
+  if (!live(sid)) return;
   reset(false);
+  stage.classList.add('stage-leave');
+  void stage.offsetWidth;
+  stage.classList.remove('stage-leave');
 }
 function launch(fn) {
   fn().catch(e => { if (e.message !== 'reset') { console.error(e); sub.textContent = '运行异常，请按 F1 复位。'; } });
@@ -399,7 +441,7 @@ function stopVideo() {
   const video = document.querySelector('#video'); video.pause(); video.removeAttribute('src'); video.load();
 }
 function showStandby() {
-  view('<div class="eyebrow">自主决策能力评估 / 07</div>' + orb + '<h1 class="standby">按任意按钮开始</h1><p class="prompt">请先就座</p>', 'P0');
+  paint('<div class="eyebrow">自主决策能力评估 / 07</div>' + orb + '<h1 class="standby">按任意按钮开始</h1><p class="prompt">请先就座</p>', 'P0');
   keys(['left', 'right', 'third'], 'breathe');
 }
 function clearChrome() {
