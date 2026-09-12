@@ -68,6 +68,16 @@ function harness(audioFiles = {}) {
 }
 const voiceCues = require('../src/voice-cues.js');
 const voice = id => voiceCues[id].file;
+test('P4 narration subtitle includes the missing 题 character', () => {
+  const expected = '本次考核将以三项决策模拟题，评估你的自主决策能力：如何生存，与谁亲密，以及如何面对无法删除的记忆。';
+  assert.equal(voiceCues['p4.meaning'].transcript, expected);
+  assert.equal(harness().ctx.GAME_DIALOGUE['p4.meaning'], expected);
+});
+test('main keeps subtitles visible through the configurable opacity interface', () => {
+  const css = fs.readFileSync('src/style.css', 'utf8');
+  assert.match(css, /:root\{--subtitle-opacity:1\}/);
+  assert.match(css, /#subtitle\{opacity:var\(--subtitle-opacity,1\)\}/);
+});
 const reach = (h, phase) => h.until(s => s.phase === phase && s.waiting);
 async function questions(h, choices) {
   await h.key('ArrowLeft');
