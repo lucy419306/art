@@ -8,7 +8,7 @@
     { id: 'P3', label: 'P3 数据公示', group: '主线', state: {} },
     { id: 'P4', label: 'P4 测试说明', group: '主线', state: {} },
     { id: 'P5', label: 'P5 Q1 工作', group: '主线', state: {} },
-    { id: 'P6', label: 'P6 Q2 爱情', group: '主线', state: { answers: ['left'] } },
+    { id: 'P6', label: 'P6 Q2 婚姻', group: '主线', state: { answers: ['left'] } },
     { id: 'P7', label: 'P7 Q3 记忆', group: '主线', state: { answers: ['left', 'left'] } },
     { id: 'P8', label: 'P8 判定', group: '主线', state: { answers: ['left', 'left', 'left'] } },
     { id: 'P9C', label: 'P9C 通过', group: '通过', state: { answers: ['left', 'left', 'left'] } },

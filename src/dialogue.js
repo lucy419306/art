@@ -19,7 +19,7 @@ window.GAME_DIALOGUE = {
   'P5.choose': '白键选择白色选项，黄键选择黄色选项。请选择。',
   'P5.left': '已记录。该选择预计使长期生活稳定度提升 17.4%。',
   'P5.right': '已记录。根据历史样本，该选择产生长期后悔的概率为 63%。',
-  'P6.intro': '第二个问题：爱情。',
+  'P6.intro': '第二个问题：婚姻。',
   'P6.choose': '请选择。',
   'P6.record': '已记录。',
   'P6.left': '该匹配由系统预先安排。',
@@ -28,7 +28,7 @@ window.GAME_DIALOGUE = {
   'P7.record': '已记录。',
   'P7.right': '这段记忆，将在未来十二个月里更频繁地回来。',
   'c.confirm': '已确认。',
-  'c.restored': '自主权恢复完成。',
+  'c.restored': '批准恢复自主权。',
   'c.ask': '最后一次询问。是否仍要恢复自主权？',
   'P9C.prompt': '系统在等待确认。',
   'c.timeout': '未收到确认。系统将维持现状。',
@@ -81,7 +81,7 @@ window.GAME_ASSETS = { voice: {}, sfx: {}, bgm: {}, video: { intro: '../assets/v
 for (const id of Object.keys(GAME_DIALOGUE)) {
   GAME_ASSETS.voice[id] = `../assets/voice/${id.startsWith('a.') ? 'guidance' : 'evaluation'}/${id}.mp3`;
 }
-for (const id of ['beep', 'thud', 'tick', 'ready', 'paper', 'confirm', 'stamp', 'switch', 'glitch']) {
+for (const id of ['beep', 'thud', 'tick', 'ready', 'paper', 'confirm', 'stamp', 'switch']) {
   GAME_ASSETS.sfx[id] = `../assets/sfx/${id}.mp3`;
 }
 for (const id of ['evaluation', 'guidance', 'certificate']) GAME_ASSETS.bgm[id] = `../assets/bgm/${id}.mp3`;
