@@ -153,6 +153,9 @@ test('B: any of three colors confirms each clause; no synthetic audio across ful
   assert.match(h.elements.get('#keys').innerHTML, /红键/);
   for (const code of ['ArrowLeft', 'Space', 'ArrowRight']) { await reach(h, 'P10B'); await h.key(code); }
   await h.until(s => s.certificateState === 'awaiting' || s.certificateState === 'complete');
+  const certBody = [...(h.elements.get('#certificate-content')?.children || [])].map(el => el.innerHTML).join('');
+  assert.match(certBody, /强制收回/);
+  assert.doesNotMatch(certBody, /正式交还本人/);
   await h.until(s => s.ending === 'B'); assert.equal(h.ctx.gameStatus().contractCount, 3);
   assert.equal(h.audios.length, 0); assert.deepEqual(h.errors, []);
 });

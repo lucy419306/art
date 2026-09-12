@@ -221,7 +221,14 @@ async function certificate(sid = session, endingId = 'C') {
   cert?.classList.add('writing');
   background('certificate', 0.08);
   certificateState = 'writing';
-  const sections = [
+  const sections = endingId === 'B' ? [
+    '<div class="cert-institution">人类自主权恢复中心</div><h2>自主决策权强制收回确认书</h2>',
+    '<p>兹确认<br><strong>申请人：用户6431</strong></p>',
+    '<p>评估结论为不适合恢复自主决策权。<br>申请人已提出强制收回请求，<br>并确认接受全部后果。</p>',
+    '<p>自本文件生效之时起，<br>关于其工作、亲密关系、记忆，<br>以及一切尚未发生的人生选择，<br><strong>由本人强制收回。</strong></p>',
+    '<p>选择的权利，由本人持有。<br>选择的后果，由本人承担。<br>系统不再代为决定，亦不保证更优人生。</p>',
+    '<p class="cert-parties">记录方：人类自主权恢复中心<br>收回方：用户6431<br>文件状态：<strong id="certificate-status">等待接收</strong></p>'
+  ] : [
     '<div class="cert-institution">人类自主权恢复中心</div><h2>自主决策权交接证书</h2>',
     '<p>兹确认<br><strong>申请人：用户6431</strong></p>',
     '<p>已完成全部自主决策能力评估，<br>并通过工作、爱情与记忆三项决策模拟。</p>',
@@ -255,12 +262,12 @@ async function certificate(sid = session, endingId = 'C') {
   document.querySelector('#receiver-seal').textContent = '本人接收';
   document.querySelector('.signature-light')?.remove();
   const seal = document.querySelector('#final-seal');
-  seal.innerHTML = '<span>自主决策权</span><strong>已交接</strong>';
+  seal.innerHTML = endingId === 'B' ? '<span>自主决策权</span><strong>已收回</strong>' : '<span>自主决策权</span><strong>已交接</strong>';
   seal.style.setProperty('--stamp-ms', `${C.certificate.stamp * C.speed}ms`);
   seal.classList.add('stamping');
   await wait(C.certificate.stamp);
   cert?.classList.add('sealed');
-  document.querySelector('#certificate-status').textContent = '交接完成';
+  document.querySelector('#certificate-status').textContent = endingId === 'B' ? '收回完成' : '交接完成';
   certificateState = 'complete';
   await sfx('stamp');
   await say('c.complete'); await pause(); await say('c.yours');
