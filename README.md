@@ -91,3 +91,5 @@ npm run build:win
 NSIS 安装程序输出到 `dist/`，包含 JS、CSS 和 assets。建议在 Windows 构建 Windows 安装包；本次未验证 Windows 实机运行。分发签名需之后单独配置。
 
 Electron 打包机制参考：[官方文档](https://www.electronjs.org/docs/latest/tutorial/application-distribution)。
+
+发布与版本约定见 RELEASING.md。
