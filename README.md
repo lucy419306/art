@@ -40,9 +40,13 @@ npm run dev
 
 Windows PowerShell 若报脚本权限错误，用 `npm.cmd run dev`。Ctrl+Shift+D 开关拍跳转面板（仅 `--dev`）。点列表直达该拍；[上一拍][下一拍][静音]；[×1][×2][×4] 加速；[暂停]/[继续] 冻结计时、动画与音频。Ctrl+Shift+← / → 切相邻拍，Ctrl+Shift+P 暂停，Ctrl+Shift+1 / 2 / 4 变速。`npm start` 不带 `--dev` 时面板与开发快捷键完全关闭。
 
+开发者倍速只加速演出计时与动画，配音、音效和背景音始终保持原速。需要快速跳过配音时，请同时启用「静音」。普通玩家模式与开发者模式使用同一份配音映射。
+
 ## MP3 素材
 
 完整逐句文件路径和配音文字见 `assets/素材清单.md`。
+
+项目根目录已有录音时，运行 `npm run voice:import` 可按 `src/voice-cues.js` 的映射复制到正式素材目录；该操作不转码、不裁切、不改变音频速度。`npm run voice:check` 用于检查所有必需配音是否齐全。
 
 - `assets/voice/evaluation/`：评估音色，每句一个 MP3。
 - `assets/voice/guidance/`：结局 A 人生指导音色，每句一个 MP3。

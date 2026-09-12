@@ -50,7 +50,7 @@ function harness(audioFiles = {}) {
   };
   ctx.window = ctx; ctx.addEventListener = (_, f) => { keyboard = f; };
   vm.createContext(ctx);
-  for (const f of ['config.js', 'dialogue.js', 'rules.js', 'media.js', 'beats.js', 'keys.js', 'game.js']) vm.runInContext(fs.readFileSync('src/' + f, 'utf8'), ctx);
+  for (const f of ['config.js', 'dialogue.js', 'voice-cues.js', 'rules.js', 'media.js', 'beats.js', 'keys.js', 'game.js']) vm.runInContext(fs.readFileSync('src/' + f, 'utf8'), ctx);
   async function flush() { for (let i = 0; i < 25; i++) await Promise.resolve(); }
   async function step() {
     await flush();
@@ -64,7 +64,8 @@ function harness(audioFiles = {}) {
     get now() { return now; }
   };
 }
-const voice = id => `../assets/voice/evaluation/${id}.mp3`;
+const voiceCues = require('../src/voice-cues.js');
+const voice = id => voiceCues[id].file;
 const reach = (h, phase) => h.until(s => s.phase === phase && s.waiting);
 async function questions(h, choices) {
   await h.key('ArrowLeft');
@@ -216,12 +217,48 @@ test('short MP3 also replaces fallback instead of imposing a three-second minimu
   await h.until(s => s.cueId === 'p2.card1'); const t = h.now;
   await h.until(s => s.cueId === 'p2.card2'); assert.equal(h.now - t, 500 + h.ctx.GAME_CONFIG.sceneFade);
 });
-test('contract five-second timer starts after first term MP3; accept prompt is not spoken', async () => {
+test('contract accept prompt plays once; five-second timer starts after first term MP3', async () => {
   const h = harness({ [voice('b.term1')]: 11000, [voice('b.accept')]: 1000 }); await toContract(h);
   await h.until(s => s.cueId === 'b.term1'); const t = h.now;
   await reach(h, 'P10B'); assert.equal(h.now - t, 11000); await h.step(); assert.equal(h.now - t, 16000);
   await reach(h, 'P10B'); await h.key('ArrowRight'); await reach(h, 'P10B');
-  assert.equal(h.audios.filter(a => a.path === voice('b.accept')).length, 0);
+  assert.equal(h.audios.filter(a => a.path === voice('b.accept')).length, 1);
+});
+test('voice starts subtitle reveal and finishes it 0-2 seconds before audio ends', async () => {
+  const duration = 5232;
+  const h = harness({ [voice('P5.choose')]: duration });
+  await h.key('ArrowLeft'); await h.until(s => s.cueId === 'P5.choose'); await h.step();
+  const html = h.elements.get('#subtitle').innerHTML;
+  const delays = [...html.matchAll(/animation-delay:([\d.]+)ms/g)].map(match => Number(match[1]));
+  assert.ok(delays.length > 1);
+  const finishAt = Math.max(...delays) + h.ctx.GAME_CONFIG.charRevealMs;
+  assert.ok(finishAt <= duration);
+  assert.ok(finishAt >= duration - 2000);
+});
+test('a pending recording still shows its extraction-table subtitle through the reserved cue', async () => {
+  const h = harness();
+  await h.key('ArrowLeft'); await reach(h, 'P5'); await h.key('ArrowLeft');
+  await reach(h, 'P6'); await h.key('ArrowLeft');
+  await h.until(s => s.cueId === 'P6.left');
+  const subtitle = h.elements.get('#subtitle').innerHTML.replace(/<[^>]+>/g, '');
+  assert.equal(subtitle, '该匹配由系统预先安排。');
+  assert.equal(h.audios.some(audio => audio.path === voice('P6.left')), false);
+});
+test('developer speed changes timers but never changes voice, sfx, or background playback rate', async () => {
+  const h = harness({ [voice('P5.choose')]: 8000, '../assets/bgm/evaluation.mp3': 60000 });
+  await h.key('ArrowLeft'); await h.until(s => s.cueId === 'P5.choose'); await h.step();
+  h.ctx.setDevSpeed(4);
+  assert.ok(h.audios.length > 0);
+  assert.ok(h.audios.every(audio => audio.playbackRate === 1));
+});
+test('voice manifest has no unexpected missing required cues', () => {
+  const missing = Object.entries(voiceCues)
+    .filter(([, cue]) => cue.required)
+    .filter(([, cue]) => !fs.existsSync(require('node:path').resolve(__dirname, '../src', cue.file)))
+    .map(([id]) => id)
+    .sort();
+  const pending = new Set(['P6.left', 'b.pain', 'c.pain']);
+  assert.ok(missing.every(id => pending.has(id)), `unexpected missing cues: ${missing.join(', ')}`);
 });
 test('long reminder finishes before automatic choice; manual choice interrupts it immediately', async () => {
   for (const manual of [false, true]) {

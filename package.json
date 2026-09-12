@@ -11,6 +11,9 @@
     "dev": "electron . --dev",
     "test": "node --test tests/*.test.cjs",
     "assets:list": "node scripts/generate-assets.cjs",
+    "voice:import": "node scripts/import-voice.cjs",
+    "voice:check": "node scripts/import-voice.cjs --check",
+    "verify:modes": "electron scripts/verify-modes.cjs",
     "pack:mac": "electron-builder --mac dir",
     "build:win": "electron-builder --win nsis"
   },

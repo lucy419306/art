@@ -2,6 +2,9 @@
 node_modules/
 dist/
 
+# 配音导入箱（正式游戏素材位于 assets/voice/）
+/voice/
+
 # 系统与解压垃圾
 __MACOSX/
 .DS_Store

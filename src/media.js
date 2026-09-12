@@ -35,8 +35,7 @@ class GameMedia {
       if (job.timer) { clearTimeout(job.timer); job.timer = null; }
       if (!this.paused) this._arm(job);
     }
-    for (const audio of this.playing) audio.playbackRate = this.rate;
-    if (this.background) this.background.audio.playbackRate = this.rate;
+    // 开发者倍速只缩短演出计时。所有音频始终保持原速；快速走查请配合静音。
   }
   pauseClock() {
     if (this.paused) return;
@@ -68,15 +67,15 @@ class GameMedia {
       if (!this.paused) this._arm(job);
     });
   }
-  async play(kind, id, fallback, signal, onDuration) {
+  async play(kind, id, fallback, signal, hooks = {}) {
     if (signal.aborted) throw new Error('reset');
     const path = this.path(kind, id);
-    if (!path) return this.delay(fallback, signal);
+    if (!path) { hooks.onFallback?.(); return this.delay(fallback, signal); }
     const completed = await new Promise((resolve, reject) => {
       const audio = new Audio(path);
-      audio.playbackRate = this.rate;
+      audio.playbackRate = 1;
       this.playing.add(audio);
-      let done = false, watchdog;
+      let done = false, watchdog, duration = null, started = false;
       const clean = () => {
         clearTimeout(watchdog); signal.removeEventListener('abort', abort);
         audio.onended = audio.onerror = audio.onloadedmetadata = audio.ontimeupdate = audio.onplaying = null;
@@ -93,17 +92,20 @@ class GameMedia {
       audio.onended = () => finish(true);
       audio.onerror = () => finish(false);
       audio.onloadedmetadata = () => {
-        if (Number.isFinite(audio.duration)) onDuration?.(audio.duration * 1000);
+        if (Number.isFinite(audio.duration)) duration = audio.duration * 1000;
       };
       let lastTime = -1;
-      audio.onplaying = () => arm(this.config.mediaStallTimeout);
+      audio.onplaying = () => {
+        if (!started) { started = true; hooks.onStart?.(duration ?? fallback); }
+        arm(this.config.mediaStallTimeout);
+      };
       audio.ontimeupdate = () => {
         if (audio.currentTime > lastTime) { lastTime = audio.currentTime; arm(this.config.mediaStallTimeout); }
       };
       arm(this.config.mediaLoadTimeout);
       if (!this.paused) audio.play().catch(() => finish(false));
     });
-    if (!completed) await this.delay(fallback, signal);
+    if (!completed) { hooks.onFallback?.(); await this.delay(fallback, signal); }
   }
   stopBackground() {
     if (!this.background) return;
@@ -116,7 +118,7 @@ class GameMedia {
     const path = this.path('bgm', id);
     if (!path || signal.aborted) return;
     const audio = new Audio(path);
-    audio.loop = true; audio.volume = volume; audio.playbackRate = this.rate;
+    audio.loop = true; audio.volume = volume; audio.playbackRate = 1;
     const stop = () => audio.pause();
     this.background = { audio, signal, stop };
     signal.addEventListener('abort', stop, { once: true });
