@@ -226,6 +226,18 @@ test('P1 adds 2 seconds after narration; P2 absent MP3 cards each last 3 seconds
     assert.equal(h.now - start, 3000 + (i === 7 ? 0 : fade));
   }
 });
+test('P3 perfect and P4 no-standard-answer each hold 1.2 seconds before the next page', async () => {
+  const h = harness({ [voice('p3.perfect')]: 1000, [voice('p4.record')]: 800 });
+  await h.key('ArrowLeft');
+  await h.until(s => s.cueId === 'p3.perfect');
+  let t = h.now;
+  await h.until(s => s.phase === 'P4');
+  assert.equal(h.now - t, 1000 + h.ctx.GAME_CONFIG.pageTransitionPause);
+  await h.until(s => s.cueId === 'p4.record');
+  t = h.now;
+  await h.until(s => s.phase === 'P5');
+  assert.equal(h.now - t, 800 + h.ctx.GAME_CONFIG.pageTransitionPause);
+});
 test('long MP3 replaces fallback; question countdown starts after voice ends', async () => {
   const h = harness({ [voice('P5.choose')]: 19000 });
   await h.key('ArrowLeft'); await h.until(s => s.cueId === 'P5.choose'); const t = h.now;

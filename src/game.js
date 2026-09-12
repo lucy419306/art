@@ -148,6 +148,7 @@ async function sceneP4(sid) {
   await say('p4.meaning'); await pause();
   await say('p4.simulations'); await pause();
   await say('p4.record');
+  await wait(C.pageTransitionPause);
 }
 async function sceneP8(sid) {
   guard(sid);
@@ -184,6 +185,7 @@ async function history() {
     await Promise.all([sfx('beep'), wait(Math.max(650, text.length * C.typeMs))]);
   }
   await say('p3.count'); await pause(); await say('p3.perfect');
+  await wait(C.pageTransitionPause);
   document.body.classList.remove('history');
 }
 
