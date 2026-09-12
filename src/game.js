@@ -260,7 +260,7 @@ async function history() {
 
 async function question(i) {
   const names = ['工作', '婚姻', '记忆'];
-  const white = [['不喜欢的工作', '收入较高', '成功概率 94%'], ['婚姻匹配度 91%', '预计持续 27 年'], ['删除记忆', '预计使未来情绪稳定度提升 22%']];
+  const white = [['不喜欢的工作', '收入较高', '成功概率 94%'], ['婚姻匹配度 91%', '预计持续 70 年'], ['删除记忆', '预计使未来情绪稳定度提升 22%']];
   const yellow = [['真正喜欢的工作', '收入较低', '成功概率 31%'], ['婚姻匹配度 52%', '预计持续 4 年', '但你爱这个人'], ['保留记忆']];
   const id = `P${5 + i}`;
   if (i === 0) {
@@ -599,7 +599,7 @@ function stopVideo() {
   const video = document.querySelector('#video'); video.pause(); video.removeAttribute('src'); video.load();
 }
 function showStandby() {
-  paint('<div class="eyebrow">自主决策能力评估 / 07</div>' + orb + '<h1 class="standby">按任意按钮开始</h1><p class="prompt">请先就座</p>', 'P0');
+  paint('<div class="eyebrow">自主决策能力评估 / 07</div>' + orb + '<h1 class="standby">按任意按钮开始</h1><p class="prompt">请先就座</p><p class="headphone-notice">请佩戴耳机</p>', 'P0');
   keys(['left', 'right', 'third'], 'breathe');
 }
 function clearChrome() {

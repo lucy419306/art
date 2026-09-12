@@ -78,6 +78,24 @@ test('main keeps subtitles visible through the configurable opacity interface', 
   assert.match(css, /:root\{--subtitle-opacity:1\}/);
   assert.match(css, /#subtitle\{opacity:var\(--subtitle-opacity,1\)\}/);
 });
+test('P0 asks the participant to wear headphones and the notice flashes', async () => {
+  const h = harness();
+  await h.flush();
+  assert.match(h.elements.get('#stage').innerHTML, /请佩戴耳机/);
+  const css = fs.readFileSync('src/v1.4.css', 'utf8');
+  assert.match(css, /\.headphone-notice[\s\S]*animation:\s*headphoneBlink/);
+  assert.match(css, /@keyframes headphoneBlink/);
+});
+test('P6 first marriage choice lasts 70 years', () => {
+  const source = fs.readFileSync('src/game.js', 'utf8');
+  assert.match(source, /婚姻匹配度 91%', '预计持续 70 年/);
+  assert.doesNotMatch(source, /预计持续 27 年/);
+});
+test('P5 regret result refers to the option rather than the choice', () => {
+  const expected = '已记录。根据历史样本，该选项产生长期后悔的概率为 63%。';
+  assert.equal(voiceCues['P5.right'].transcript, expected);
+  assert.equal(harness().ctx.GAME_DIALOGUE['P5.right'], expected);
+});
 const reach = (h, phase) => h.until(s => s.phase === phase && s.waiting);
 async function questions(h, choices) {
   await h.key('ArrowLeft');

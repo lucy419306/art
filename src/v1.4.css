@@ -330,6 +330,12 @@ footer { position: relative; }
 @keyframes assessPulse {
   50% { opacity: .58; transform: scale(.986); box-shadow: 0 0 14px 4px #91c6d640, 0 0 48px 14px #75bcd114; }
 }
+.headphone-notice {
+  margin: 14px 0 0; color: var(--warm); font-size: 14px; letter-spacing: 6px;
+  text-shadow: 0 0 12px #e1bb7b66;
+  animation: headphoneBlink 1.4s ease-in-out infinite;
+}
+@keyframes headphoneBlink { 50% { opacity: .18; } }
 .history .data { margin-bottom: 28px; }
 .history #subtitle { padding-top: 36px; min-height: 108px; }
 @media (max-height: 780px) {
