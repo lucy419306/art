@@ -26,7 +26,7 @@ app.whenReady().then(async () => {
     fs.mkdirSync(output, { recursive: true });
     await win.loadFile(path.join(root, 'src/index.html'));
     await until("gameStatus().phase === 'P0'");
-    assert.equal(await evaluate("document.querySelectorAll('#keys .key').length"), 2);
+    assert.equal(await evaluate("document.querySelectorAll('#keys .key').length"), 0);
     await capture('standby');
     await evaluate('C.speed = 0.08; C.resetTimeout = 900000; launch(() => certificate());');
     await until("gameStatus().ending === 'C'");

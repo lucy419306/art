@@ -19,7 +19,7 @@ function harness(audioFiles = {}) {
   }
   const doc = { body: el(), querySelector: s => {
     if (!elements.has(s)) elements.set(s, el()); return elements.get(s);
-  }, createElement: el };
+  }, querySelectorAll: () => [], createElement: el };
   class FakeAudio {
     constructor(path) { this.path = path; this.currentTime = 0; this.paused = true; this.pending = []; audios.push(this); }
     play() {
@@ -45,7 +45,7 @@ function harness(audioFiles = {}) {
   };
   ctx.window = ctx; ctx.addEventListener = (_, f) => { keyboard = f; };
   vm.createContext(ctx);
-  for (const f of ['config.js', 'dialogue.js', 'rules.js', 'media.js', 'beats.js', 'game.js']) vm.runInContext(fs.readFileSync('src/' + f, 'utf8'), ctx);
+  for (const f of ['config.js', 'dialogue.js', 'rules.js', 'media.js', 'beats.js', 'keys.js', 'game.js']) vm.runInContext(fs.readFileSync('src/' + f, 'utf8'), ctx);
   async function flush() { for (let i = 0; i < 25; i++) await Promise.resolve(); }
   async function step() {
     await flush();
@@ -73,13 +73,30 @@ async function toContract(h) {
   await questions(h, ['ArrowRight', 'ArrowLeft', 'ArrowLeft']); await reach(h, 'P9R'); await h.key('Space');
 }
 
+test('key language renders labeled hollow caps and omits unrequested colors', () => {
+  const keys = require('../src/keys.js');
+  const p57 = keys.bar(['left', 'right']);
+  assert.match(p57, /白键/);
+  assert.match(p57, /黄键/);
+  assert.doesNotMatch(p57, /红键/);
+  assert.doesNotMatch(p57, /arrow|←|→/i);
+  const p9r = keys.bar(['third']);
+  assert.match(p9r, /红键/);
+  assert.doesNotMatch(p9r, /白键/);
+  assert.doesNotMatch(p9r, /黄键/);
+  assert.match(keys.panels({ left: '放弃', right: '恢复' }), /放弃[\s\S]*恢复/);
+});
 test('all eight combinations: only all-white answers pass', () => {
   const { passes } = require('../src/rules.js');
   for (let mask = 0; mask < 8; mask++) assert.equal(passes([0, 1, 2].map(i => mask & (1 << i) ? 'right' : 'left')), mask === 0);
 });
 test('C: yellow final choice delivers certificate without another key and resets after 90s', async () => {
   const h = harness(); await questions(h, ['ArrowLeft', 'ArrowLeft', 'ArrowLeft']);
-  await reach(h, 'P9C'); await h.key('ArrowRight');
+  await reach(h, 'P9C');
+  assert.match(h.elements.get('#stage').innerHTML, /放弃/);
+  assert.match(h.elements.get('#keys').innerHTML, /白键/);
+  assert.doesNotMatch(h.elements.get('#keys').innerHTML, /红键/);
+  await h.key('ArrowRight');
   await h.until(s => s.certificateState === 'signing'); assert.equal(h.ctx.gameStatus().waiting, false);
   await h.until(s => s.ending === 'C'); assert.equal(h.ctx.gameStatus().certificateState, 'complete');
   const t = h.now; await h.step(); assert.equal(h.now - t, 90000); assert.equal(h.ctx.gameStatus().phase, 'P0');
@@ -97,7 +114,11 @@ test('A2: final confirmation timeout retains prior 30/90-second fallback', async
   await h.until(s => s.ending === 'A2');
 });
 test('A1: all three timeouts choose yellow; rejection waits exactly 10s and ignores white/yellow', async () => {
-  const h = harness(); await questions(h, [null, null, null]); await reach(h, 'P9R');
+  const h = harness(); await questions(h, [null, null, null]);   await reach(h, 'P9R');
+  assert.match(h.elements.get('#stage').innerHTML, /请做出抉择/);
+  assert.doesNotMatch(h.elements.get('#stage').innerHTML, /请保持原位|强制收回决策权（红色按钮）/);
+  assert.match(h.elements.get('#keys').innerHTML, /红键/);
+  assert.doesNotMatch(h.elements.get('#keys').innerHTML, /白键|黄键/);
   assert.deepEqual(Array.from(h.ctx.gameStatus().answers), ['right', 'right', 'right']);
   const t = h.now; await h.key('ArrowLeft'); await h.key('ArrowRight');
   assert.equal(h.ctx.gameStatus().waiting, true); await h.step(); assert.equal(h.now - t, 10000);
@@ -105,6 +126,10 @@ test('A1: all three timeouts choose yellow; rejection waits exactly 10s and igno
 });
 test('B: any of three colors confirms each clause; no synthetic audio across full ending', async () => {
   const h = harness(); await toContract(h);
+  await reach(h, 'P10B');
+  assert.match(h.elements.get('#keys').innerHTML, /白键/);
+  assert.match(h.elements.get('#keys').innerHTML, /黄键/);
+  assert.match(h.elements.get('#keys').innerHTML, /红键/);
   for (const code of ['ArrowLeft', 'Space', 'ArrowRight']) { await reach(h, 'P10B'); await h.key(code); }
   await h.until(s => s.ending === 'B'); assert.equal(h.ctx.gameStatus().contractCount, 3);
   assert.equal(h.audios.length, 0); assert.deepEqual(h.errors, []);
@@ -113,6 +138,9 @@ test('A3: preserve checked clause, repeat hesitation after continue; red ignored
   const h = harness(); await toContract(h); await reach(h, 'P10B'); await h.key('ArrowLeft');
   await reach(h, 'P10B'); const t = h.now; await h.step(); assert.equal(h.now - t, 5000);
   await reach(h, 'P10B'); await h.key('Space'); assert.equal(h.ctx.gameStatus().waiting, true);
+  assert.match(h.elements.get('#keys').innerHTML, /白键/);
+  assert.match(h.elements.get('#keys').innerHTML, /黄键/);
+  assert.doesNotMatch(h.elements.get('#keys').innerHTML, /红键/);
   await h.key('ArrowRight'); await reach(h, 'P10B'); assert.equal(h.ctx.gameStatus().contractCount, 1);
   await h.step(); await reach(h, 'P10B'); await h.key('ArrowLeft'); await h.until(s => s.ending === 'A3');
 });
@@ -122,11 +150,15 @@ test('A3: hesitation unanswered for 15 seconds terminates', async () => {
 });
 test('red is hidden/disabled at standby; held keys cannot start; F1 cancels opening', async () => {
   const h = harness(); await h.key('Space'); assert.equal(h.ctx.gameStatus().phase, 'P0');
+  assert.equal(h.elements.get('#keys').innerHTML, '');
   assert.ok(!h.elements.get('#keys').innerHTML.includes('third'));
   await h.key('ArrowLeft', true); assert.equal(h.ctx.gameStatus().phase, 'P0');
   await h.key('ArrowLeft'); await h.key('ArrowRight'); assert.equal(h.ctx.gameStatus().phase, 'P1');
   await h.key('F1'); assert.equal(h.ctx.gameStatus().phase, 'P0');
   await h.key('ArrowLeft'); await reach(h, 'P5'); assert.equal(h.ctx.gameStatus().answers.length, 0);
+  assert.match(h.elements.get('#keys').innerHTML, /白键/);
+  assert.match(h.elements.get('#keys').innerHTML, /黄键/);
+  assert.doesNotMatch(h.elements.get('#keys').innerHTML, /红键/);
 });
 test('P1 adds 2 seconds after narration; P2 absent MP3 cards each last 3 seconds', async () => {
   const h = harness(); await h.key('ArrowLeft'); await h.until(s => s.cueId === 'p1.detect');

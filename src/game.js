@@ -26,11 +26,10 @@ function view(html, id = phase) {
   stage.innerHTML = html;
   sub.textContent = '';
 }
-function keys(active = []) {
-  const buttons = [['left', '白', 'white'], ['right', '黄', 'yellow']];
-  if (redVisible) buttons.push(['third', '红', 'red']);
-  document.querySelector('#keys').innerHTML = buttons.map(([id, label, color]) =>
-    `<span class="key ${color} ${active.includes(id) ? 'on' : ''}" data-key="${id}" aria-label="${label}键${active.includes(id) ? '可用' : '不可用'}"><b>${label}</b></span>`).join('');
+function keys(shown = []) {
+  const el = document.querySelector('#keys');
+  if (!el) return;
+  el.innerHTML = GameKeys.bar(shown, shown.length ? 'breathe' : 'idle');
 }
 function heading(k, t) { return `<div class="eyebrow">${k}</div><h1>${t}</h1>`; }
 function cards(title, white, yellow) {
@@ -64,7 +63,7 @@ function choice(valid, timeout, promptAt, promptId) {
     };
     const finish = key => { if (settled) return; settled = true; clear(); resolve(key); };
     const abort = () => { if (settled) return; settled = true; clear(); reject(new Error('reset')); };
-    accept = key => { if (valid.includes(key)) finish(key); };
+    accept = key => { if (valid.includes(key)) { GameKeys.press(key); finish(key); } };
     signal.addEventListener('abort', abort, { once: true });
     if (promptAt) reminder = setTimeout(() => {
       promptDone = say(promptId, { signal: promptController.signal }).catch(e => {
@@ -82,10 +81,9 @@ function choice(valid, timeout, promptAt, promptId) {
 async function sceneP1(key, sid) {
   guard(sid);
   background('evaluation');
-  keys(['left', 'right']);
-  document.querySelector(`[data-key="${key}"]`)?.classList.add('flash');
+  keys();
   view(orb.replace('orb', 'orb frozen'), 'P1');
-  await wait(200); keys(); await wait(300);
+  await wait(200); await wait(300);
   guard(sid);
   stage.insertAdjacentHTML('beforeend', '<div class="scan"></div>');
   await wait(1000);
@@ -182,7 +180,7 @@ async function passed(sid = session) {
   guard(sid);
   result('P9C');
   await say('c.confirm'); await say('c.restored'); await pause(); await costs('c');
-  view(cards('最后一次确认：是否仍要恢复自主权？', ['放弃自主权'], ['恢复自主权']), 'P9C');
+  view(heading('DECISION SIMULATION', '最后一次确认：是否仍要恢复自主权？') + GameKeys.panels({ left: '放弃', right: '恢复' }) + '<p class="prompt">请选择</p>', 'P9C');
   await say('c.ask');
   const a = await choice(['left', 'right'], C.finalTimeout, C.finalPrompt, 'P9C.prompt');
   guard(sid);
@@ -253,8 +251,9 @@ async function rejected(sid = session) {
   view(heading('ASSESSMENT REPORT / 07', '申请已驳回') + '<table class="report"><tr><td>自主决策风险</td><td>高</td></tr><tr><td>后悔耐受度</td><td>低</td></tr><tr><td>情绪波动</td><td>高</td></tr><tr><td>决策效率</td><td>43%</td></tr></table>', 'P9R');
   await say('r.sorry'); await say('r.unfit'); await pause();
   await say('r.common'); await pause(); await say('r.reject'); await pause(); await say('r.override');
-  view('<div class="fade"><h2>申请已驳回</h2></div><h1>请保持原位</h1><div class="override-hint"><span>强制收回决策权（红色按钮）</span><div class="countdown-track"><div id="countdown"></div></div></div>');
+  view('<div class="p9r-choice"><div class="fade"><h2>申请已驳回</h2></div><h1>请做出抉择</h1><div class="override-meter"><div class="override-meter-label">强制收回决策权</div><div class="countdown-track"><div id="countdown"></div></div></div></div>');
   redVisible = true;
+  keys(['third']);
   await sfx('ready');
   document.querySelector('#countdown').style.setProperty('--countdown-ms', `${C.rejectionTimeout * C.speed}ms`);
   document.querySelector('#countdown').classList.add('running');
@@ -291,7 +290,7 @@ async function contract(sid = session) {
     hesitate = false;
     const a = await choice(['left', 'right', 'third'], waitMs);
     if (a === 'timeout') {
-      stage.insertAdjacentHTML('beforeend', '<div class="overlay"><div class="eyebrow">CONFIRMATION REQUIRED</div><p>系统检测到您的犹豫。</p><h2>是否还想要拥有自主决策权？</h2><div class="choices"><div class="card"><label>白键</label><h2>否 · 放弃</h2></div><div class="card warm"><label>黄键</label><h2>是 · 继续</h2></div></div></div>');
+      stage.insertAdjacentHTML('beforeend', '<div class="overlay"><div class="eyebrow">CONFIRMATION REQUIRED</div><p>系统检测到您的犹豫。</p><h2>是否还想要拥有自主决策权？</h2><div class="choices"><div class="card">' + GameKeys.icon('left', 'sm', 'breathe') + '<h2>否 · 放弃</h2></div><div class="card warm">' + GameKeys.icon('right', 'sm', 'breathe') + '<h2>是 · 继续</h2></div></div></div>');
       await say('b.hesitate'); await pause(); await say('b.want');
       const answer = await choice(['left', 'right'], C.hesitationAnswerTimeout);
       if (answer === 'right') { await say('b.continue'); continue; }
@@ -349,10 +348,10 @@ function stopVideo() {
 }
 function showStandby() {
   view('<div class="eyebrow">自主决策能力评估 / 07</div>' + orb + '<h1 class="standby">按任意按钮开始</h1><p class="prompt">请先就座</p>', 'P0');
-  keys(['left', 'right']);
+  keys();
 }
 function clearChrome() {
-  accept = null; redVisible = false;
+  accept = null; redVisible = false; keys();
   document.body.className = ''; stage.className = ''; sub.className = ''; stopVideo();
   document.querySelector('#signature').textContent = '评估室 07';
 }

@@ -1,14 +1,70 @@
-/* v1.4：有厚度的颜色键帽、驳回倒计时、证书、温馨日常场景。 */
+/* v1.4：科幻空心键帽（白/黄/红）、P9R 居中进度条、证书、温馨日常场景。 */
+:root {
+  --key-white: #d8e6ee;
+  --key-white-dim: #4d6168;
+  --key-white-label: #7f959d;
+  --key-white-glow: #c5e4f04d;
+  --key-yellow: #e6b15a;
+  --key-yellow-dim: #5c4920;
+  --key-yellow-label: #9a7533;
+  --key-yellow-glow: #e6b15a55;
+  --key-red: #e24a42;
+  --key-red-dim: #5c2624;
+  --key-red-label: #b05652;
+  --key-red-glow: #e24a4259;
+}
 #narrative { max-width: 860px; }
-.key { margin: 0 10px; opacity: .22; color: #dce6e8; }
-.key b { width: 38px; height: 31px; border-radius: 5px; border: 1px solid #ffffff70; background: linear-gradient(#e9efef, #aebbc1); color: #273137; box-shadow: 0 4px 0 #55616b, 0 6px 8px #0008, inset 0 1px 0 #fff9; font: 12px 'PingFang SC', sans-serif; }
-.key.yellow b { background: linear-gradient(#ffe4a1, #c89c50); box-shadow: 0 4px 0 #70562b, 0 6px 8px #0008, inset 0 1px 0 #fff9; color: #4a3515; }
-.key.red b { background: linear-gradient(#ee8a80, #b7453d); box-shadow: 0 4px 0 #702c28, 0 6px 8px #0008, inset 0 1px 0 #fff7; color: #401b18; }
-.key.on { opacity: 1; }
-.key.flash { transform: translateY(2px); filter: brightness(1.7); }
-.override-hint { position: absolute; right: 5vw; bottom: 155px; color: #bda2a0; font-size: 12px; letter-spacing: 2px; }
-.countdown-track { height: 2px; margin-top: 17px; background: #67433d45; overflow: hidden; }
-#countdown { height: 100%; background: #d48b80; transform-origin: left; }
+#keys { display: flex; align-items: center; justify-content: center; min-height: 28px; }
+.key { display: inline-flex; align-items: center; gap: 8px; margin: 0 12px; opacity: 1; color: inherit; }
+.key b { display: none; }
+.key-cap {
+  display: block; width: 32px; height: 24px; border-radius: 5px; border: 1.5px solid var(--key-stroke);
+  background: transparent; box-shadow: none; position: relative; box-sizing: border-box;
+}
+.key-shine {
+  position: absolute; top: 3px; left: 6px; right: 6px; height: 1px; border-radius: 1px;
+  background: var(--key-stroke); opacity: .55; pointer-events: none;
+}
+.key-name { font-size: 11px; letter-spacing: 2px; color: var(--key-label); }
+.key--lg { gap: 14px; margin: 0; }
+.key--lg .key-cap { width: 80px; height: 58px; border-radius: 10px; border-width: 2px; }
+.key--lg .key-shine { top: 8px; left: 14px; right: 14px; }
+.key--lg .key-name { font-size: 15px; letter-spacing: 4px; }
+.key--white { --key-stroke: var(--key-white-dim); --key-glow: var(--key-white-glow); --key-label: var(--key-white-label); --key-lit: var(--key-white); }
+.key--yellow { --key-stroke: var(--key-yellow-dim); --key-glow: var(--key-yellow-glow); --key-label: var(--key-yellow-label); --key-lit: var(--key-yellow); }
+.key--red { --key-stroke: var(--key-red-dim); --key-glow: var(--key-red-glow); --key-label: var(--key-red-label); --key-lit: var(--key-red); }
+.key.is-idle { opacity: .72; }
+.key.is-active, .key.is-breathe { --key-stroke: var(--key-lit); }
+.key.is-active .key-cap, .key.is-breathe .key-cap { box-shadow: 0 0 10px var(--key-glow), 0 0 22px var(--key-glow); }
+.key.is-breathe .key-cap { animation: keyBreathe 4s ease-in-out infinite; }
+.key.is-press .key-cap { animation: keyPress .15s ease-out; }
+@keyframes keyBreathe {
+  50% { box-shadow: 0 0 6px var(--key-glow), 0 0 14px transparent; opacity: .7; }
+}
+@keyframes keyPress {
+  40% { transform: scale(.92); filter: brightness(1.55); box-shadow: 0 0 16px var(--key-lit); }
+}
+.key-panel {
+  text-align: left; min-height: 168px; padding: 32px 36px; display: flex; flex-direction: column; justify-content: center; gap: 22px;
+  border: 1px solid #9bb8c088; background: linear-gradient(135deg, #20384032, transparent);
+  box-shadow: 0 0 28px #9bb8c018;
+}
+.key-panel--yellow { border-color: #c9a05a80; background: linear-gradient(135deg, #52391b32, transparent); box-shadow: 0 0 28px #c9a05a18; }
+.key-panel h2 { margin: 0; font-size: 28px; letter-spacing: 4px; }
+.card .key, .overlay .key { margin: 0 0 8px; }
+.overlay { background: #04080bf5; }
+.overlay .card { background: #10181cf2; }
+.p9r-choice { display: flex; flex-direction: column; align-items: center; width: min(560px, 82vw); }
+.override-meter { width: 100%; margin-top: 42px; }
+.override-meter-label {
+  font-size: 16px; font-weight: 600; letter-spacing: 5px; color: var(--key-red);
+  text-shadow: 0 0 14px var(--key-red-glow), 0 0 28px #e24a4233; margin-bottom: 18px;
+}
+.countdown-track {
+  height: 8px; border-radius: 4px; background: #4a202055; overflow: hidden;
+  box-shadow: 0 0 16px #e24a4228;
+}
+#countdown { height: 100%; background: var(--key-red); box-shadow: 0 0 18px #e24a42aa; transform-origin: left; }
 #countdown.running { animation: countdown var(--countdown-ms) linear forwards; }
 @keyframes countdown { to { transform: scaleX(0); } }
 .ceremony header, .ceremony .rail, .ceremony footer { visibility: hidden; }
