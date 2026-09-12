@@ -107,7 +107,12 @@ function choice(valid, timeout, promptAt, promptId) {
     accept = key => {
       if (valid.includes(key)) {
         GameKeys.press(key);
-        sfx('beep').catch(ignoreReset);
+        const sfxId = key === 'left'
+          ? (media.path('sfx', 'key.white') ? 'key.white' : 'beep')
+          : (key === 'right'
+            ? (media.path('sfx', 'key.yellow') ? 'key.yellow' : 'beep')
+            : 'beep');
+        sfx(sfxId).catch(ignoreReset);
         finish(key);
       }
     };
@@ -144,7 +149,9 @@ async function sceneP2(sid) {
   guard(sid);
   media.stopBackground();
   if (!devMuted) {
-    if (media.path('sfx', 'p2.intro') || media.path('sfx', 'p2.loop') || media.path('bgm', 'p2.loop')) {
+    if (media.path('sfx', 'p2_3.bg')) {
+      sfx('p2_3.bg', 0, 0.25).catch(e => { if (e.message !== 'reset') console.error(e); });
+    } else if (media.path('sfx', 'p2.intro') || media.path('sfx', 'p2.loop') || media.path('bgm', 'p2.loop')) {
       media.playChain({ intro: 'p2.intro', loop: 'p2.loop', volume: 0.25 }, run.signal);
     } else {
       background('evaluation');
@@ -158,9 +165,11 @@ async function sceneP2(sid) {
     await view(`<div class="eyebrow">ARCHIVE / ${String(i + 1).padStart(2, '0')}</div><h2 id="narrative"></h2>`, 'P2');
     await say(`p2.card${i + 1}`, { el: document.querySelector('#narrative'), fallback: C.introDurations[i] });
   }
-  sfx('p2.ending', 0, 0.25).catch(e => { if (e.message !== 'reset') console.error(e); });
-  if (!devMuted) {
-    media.playChain({ intro: 'p3_4.intro', loop: 'p3_4.loop', volume: 0.25 }, run.signal);
+  if (!media.path('sfx', 'p2_3.bg')) {
+    sfx('p2.ending', 0, 0.25).catch(e => { if (e.message !== 'reset') console.error(e); });
+    if (!devMuted) {
+      media.playChain({ intro: 'p3_4.intro', loop: 'p3_4.loop', volume: 0.25 }, run.signal);
+    }
   }
   await wait(1000);
   guard(sid);
@@ -609,5 +618,9 @@ window.addEventListener('keydown', e => {
   } else accept?.(key);
 });
 window.gameStatus = () => ({ phase, answers: [...answers], ending, waiting: !!accept, contractCount, certificateState, cueId, beat: currentBeat });
+window.playTestAsmrSolo = () => {
+  media.stopBackground();
+  media.playChain({ loop: 'p4_6.asmr.loop', volume: 1.0 }, run.signal);
+};
 window.__devKnownBeats = KNOWN_BEATS;
 launch(async () => { await media.init(); ready = true; reset(); });

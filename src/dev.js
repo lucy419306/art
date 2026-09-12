@@ -58,7 +58,7 @@
       parts.push('<div class="dev-g">' + g + '</div>');
       for (const b of list) parts.push('<button type="button" class="dev-item" data-id="' + b.id + '">' + b.label + '</button>');
     }
-    parts.push('</div><button type="button" class="dev-item" data-act="hesitate">P10B+犹豫</button><div class="note">Ctrl+Shift+D 开关 · ←/→ 相邻拍<br>Ctrl+Shift+P 暂停 · 1/2/4 变速</div>');
+    parts.push('</div><div class="dev-row" style="margin-top:4px"><button type="button" data-act="hesitate">P10B+犹豫</button><button type="button" data-act="asmr-solo">ASMR独奏</button></div><div class="note">Ctrl+Shift+D 开关 · ←/→ 相邻拍<br>Ctrl+Shift+P 暂停 · 1/2/4 变速</div>');
     panel.innerHTML = parts.join('');
     highlight();
   }
@@ -79,6 +79,10 @@
     if (t.dataset.act === 'speed') { setSpeed(Number(t.dataset.rate)); return; }
     if (t.dataset.act === 'pause') { setPaused(!paused); return; }
     if (t.dataset.act === 'hesitate') return jump('P10B', { hesitate: true });
+    if (t.dataset.act === 'asmr-solo') {
+      if (typeof window.playTestAsmrSolo === 'function') window.playTestAsmrSolo();
+      return;
+    }
     if (t.dataset.id) jump(t.dataset.id);
   });
 

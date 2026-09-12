@@ -86,6 +86,9 @@ for (const id of ['beep', 'thud', 'tick', 'ready', 'paper', 'confirm', 'stamp', 
 }
 GAME_ASSETS.sfx['beep'] = '../assets/sfx/P2 七张档案卡.mp3';
 GAME_ASSETS.sfx['p1.start'] = '../assets/sfx/P1启动.mp3';
+GAME_ASSETS.sfx['p2_3.bg'] = '../assets/sfx/P2-3背景.mp3';
+GAME_ASSETS.sfx['key.white'] = '../assets/sfx/白键.mp3';
+GAME_ASSETS.sfx['key.yellow'] = '../assets/sfx/黄键.mp3';
 GAME_ASSETS.sfx['p2.intro'] = '../assets/sfx/P2 背景声intro.mp3';
 GAME_ASSETS.bgm['p2.loop'] = '../assets/sfx/P2 背景声loop.mp3';
 GAME_ASSETS.sfx['p2.ending'] = '../assets/sfx/P2 背景声ending.mp3';

@@ -552,3 +552,71 @@ test('P4 to P7 audio transitions: ending+intro crossfade, cues, pain memory solo
   const p4_6EndingAudio = h.audios.find(a => a.path === p4_6Ending);
   assert.ok(p4_6EndingAudio && !p4_6EndingAudio.paused, 'P4-6 ending sfx should play before P8');
 });
+
+test('P2-3 background sfx: plays once at P2 start without looping', async () => {
+  const p2_3Bg = '../assets/sfx/P2-3背景.mp3';
+  const beepPath = '../assets/sfx/P2 七张档案卡.mp3';
+  const audioFiles = {
+    ['../assets/sfx/P1启动.mp3']: 500,
+    [voice('p1.detect')]: 100,
+    [p2_3Bg]: 29300,
+    [beepPath]: 2090
+  };
+  for (let i = 1; i <= 7; i++) audioFiles[voice(`p2.card${i}`)] = 300;
+  audioFiles[voice('p2.welcome')] = 500;
+
+  const h = harness(audioFiles);
+  await h.key('ArrowLeft');
+
+  // 进入 P2：开始播放 P2-3 背景 sfx，且只播放一次（不 loop）
+  await h.until(s => s.cueId === 'p2.card1');
+  const bgAudio = h.audios.find(a => a.path === p2_3Bg);
+  assert.ok(bgAudio, 'P2-3 bg audio should be created');
+  assert.equal(bgAudio.paused, false, 'P2-3 bg audio should play at P2 start');
+  assert.equal(!bgAudio.loop, true, 'P2-3 bg sfx must NOT loop (plays once)');
+});
+
+test('white and yellow key press audio triggers: plays corresponding white / yellow sfx', async () => {
+  const whiteKeyAudio = '../assets/sfx/白键.mp3';
+  const yellowKeyAudio = '../assets/sfx/黄键.mp3';
+  const audioFiles = {
+    [whiteKeyAudio]: 2060,
+    [yellowKeyAudio]: 2060,
+    ['../assets/sfx/P1启动.mp3']: 100,
+    [voice('p1.detect')]: 100,
+    [voice('p2.welcome')]: 100,
+    [voice('p3.count')]: 100,
+    [voice('p3.perfect')]: 100,
+    [voice('p4.meaning')]: 100,
+    [voice('p4.simulations')]: 100,
+    [voice('p4.record')]: 100
+  };
+  for (let i = 1; i <= 7; i++) audioFiles[voice(`p2.card${i}`)] = 100;
+  for (const id of ['P5', 'P6', 'P7']) {
+    for (const action of ['intro', 'choose', 'record', 'left', 'right']) {
+      const key = `${id}.${action}`;
+      if (voiceCues[key]) audioFiles[voice(key)] = 100;
+    }
+  }
+
+  const h = harness(audioFiles);
+  await h.key('ArrowLeft');
+
+  // 达到 P5
+  await reach(h, 'P5');
+  assert.equal(h.ctx.gameStatus().waiting, true);
+
+  // 按白键（ArrowLeft）：触发白键.mp3
+  await h.key('ArrowLeft');
+  const playedWhite = h.audios.find(a => a.path === whiteKeyAudio);
+  assert.ok(playedWhite && !playedWhite.paused, 'Pressing white key must trigger 白键.mp3');
+
+  // 达到 P6
+  await reach(h, 'P6');
+  assert.equal(h.ctx.gameStatus().waiting, true);
+
+  // 按黄键（ArrowRight）：触发黄键.mp3
+  await h.key('ArrowRight');
+  const playedYellow = h.audios.find(a => a.path === yellowKeyAudio);
+  assert.ok(playedYellow && !playedYellow.paused, 'Pressing yellow key must trigger 黄键.mp3');
+});

@@ -46,6 +46,21 @@ class GameMedia {
         if (this.inventory.has(p)) return p;
       }
     }
+    if (kind === 'sfx' && (id === 'p2_3.bg' || id === 'p2_3' || id === 'p2.bg')) {
+      for (const p of ['../assets/sfx/P2-3背景.mp3', '../assets/sfx/p2-3背景.mp3', '../assets/sfx/P2-3背景声.mp3']) {
+        if (this.inventory.has(p)) return p;
+      }
+    }
+    if (kind === 'sfx' && (id === 'key.white' || id === 'white.key' || id === 'key_white')) {
+      for (const p of ['../assets/sfx/白键.mp3', '../assets/sfx/white.mp3']) {
+        if (this.inventory.has(p)) return p;
+      }
+    }
+    if (kind === 'sfx' && (id === 'key.yellow' || id === 'yellow.key' || id === 'key_yellow')) {
+      for (const p of ['../assets/sfx/黄键.mp3', '../assets/sfx/yellow.mp3']) {
+        if (this.inventory.has(p)) return p;
+      }
+    }
     if (kind === 'sfx' && (id === 'p3_4.intro' || id === 'p2_3.intro')) {
       for (const p of ['../assets/sfx/P3-4 用户你好背景声intro.mp3', '../assets/sfx/P2-3 用户你好背景声intro.mp3']) {
         if (this.inventory.has(p)) return p;
@@ -129,7 +144,7 @@ class GameMedia {
       this.background.webNode.gainNode.gain.value = this.background.volume ?? 0.2;
     }
     if (this.background?.webNodes) {
-      for (const wn of this.background.webNodes) wn.gainNode.gain.value = this.background.volume ?? 0.2;
+      for (const wn of this.background.webNodes) wn.gainNode.gain.value = wn.targetVolume ?? this.background.volume ?? 0.2;
     }
     if (this.audioCtx && this.audioCtx.state === 'suspended') {
       this.audioCtx.resume().catch(() => {});
@@ -319,7 +334,14 @@ class GameMedia {
     if (signal.aborted) return;
     const introPath = intro ? (this.path('sfx', intro) || this.path('bgm', intro)) : null;
     const loopIds = Array.isArray(loop) ? loop : (loop ? [loop] : []);
-    const loopPaths = loopIds.map(id => this.path('bgm', id) || this.path('sfx', id)).filter(Boolean);
+    const loopItems = loopIds.map(id => {
+      const p = this.path('bgm', id) || this.path('sfx', id);
+      if (!p) return null;
+      // ASMR 录音电平远低于主背景，为保障在 P4-P6 演奏中能清晰可辨，赋予其充沛增益
+      const trackVolume = (id === 'p4_6.asmr.loop' || p.includes('ASMR')) ? 0.95 : volume;
+      return { id, path: p, volume: trackVolume };
+    }).filter(Boolean);
+    const loopPaths = loopItems.map(item => item.path);
     let introAudio = null;
     const activeAudios = [];
     const webNodes = [];
@@ -338,9 +360,11 @@ class GameMedia {
 
     const startLoop = () => {
       if (!loopPaths.length || signal.aborted || cancelled) return;
-      for (const loopPath of loopPaths) {
+      for (const item of loopItems) {
+        const loopPath = item.path;
+        const trackVolume = item.volume;
         const loopAudio = new Audio(loopPath);
-        loopAudio.loop = true; loopAudio.volume = volume; loopAudio.playbackRate = 1;
+        loopAudio.loop = true; loopAudio.volume = trackVolume; loopAudio.playbackRate = 1;
         activeAudios.push(loopAudio);
         if (this.background) {
           this.background.audio = activeAudios[0];
@@ -362,14 +386,14 @@ class GameMedia {
             source.playbackRate.value = 1;
 
             const gainNode = this.audioCtx.createGain();
-            gainNode.gain.value = this.paused ? 0 : volume;
+            gainNode.gain.value = this.paused ? 0 : trackVolume;
 
             source.connect(gainNode);
             gainNode.connect(this.audioCtx.destination);
             source.start(0, range.loopStart);
 
             loopAudio.muted = true;
-            const wn = { source, gainNode };
+            const wn = { source, gainNode, targetVolume: trackVolume };
             webNodes.push(wn);
             if (this.background) this.background.webNodes = webNodes;
           }).catch(() => {});
