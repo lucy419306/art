@@ -90,17 +90,29 @@ test('all eight combinations: only all-white answers pass', () => {
   const { passes } = require('../src/rules.js');
   for (let mask = 0; mask < 8; mask++) assert.equal(passes([0, 1, 2].map(i => mask & (1 << i) ? 'right' : 'left')), mask === 0);
 });
-test('C: yellow final choice delivers certificate without another key and resets after 90s', async () => {
+test('C: yellow final choice unfolds certificate; any key accepts then resets after 30s', async () => {
   const h = harness(); await questions(h, ['ArrowLeft', 'ArrowLeft', 'ArrowLeft']);
   await reach(h, 'P9C');
   assert.match(h.elements.get('#stage').innerHTML, /放弃/);
   assert.match(h.elements.get('#keys').innerHTML, /白键/);
   assert.doesNotMatch(h.elements.get('#keys').innerHTML, /红键/);
   await h.key('ArrowRight');
+  await h.until(s => s.certificateState === 'awaiting');
+  assert.equal(h.ctx.gameStatus().waiting, true);
+  await h.key('Space');
   await h.until(s => s.certificateState === 'signing'); assert.equal(h.ctx.gameStatus().waiting, false);
   await h.until(s => s.ending === 'C'); assert.equal(h.ctx.gameStatus().certificateState, 'complete');
-  const t = h.now; await h.step(); assert.equal(h.now - t, 90000); assert.equal(h.ctx.gameStatus().phase, 'P0');
+  const t = h.now; await h.step(); assert.equal(h.now - t, 30000); assert.equal(h.ctx.gameStatus().phase, 'P0');
   assert.equal(h.audios.length, 0); assert.deepEqual(h.errors, []);
+});
+test('C: certificate auto-accepts after 15s if no key', async () => {
+  const h = harness(); await questions(h, ['ArrowLeft', 'ArrowLeft', 'ArrowLeft']);
+  await reach(h, 'P9C'); await h.key('ArrowRight');
+  await h.until(s => s.certificateState === 'awaiting');
+  const t = h.now;
+  await h.until(s => s.certificateState === 'signing');
+  assert.equal(h.now - t, 15000);
+  await h.until(s => s.ending === 'C');
 });
 test('A2: white final choice abandons, no certificate', async () => {
   const h = harness(); await questions(h, ['ArrowLeft', 'ArrowLeft', 'ArrowLeft']);
@@ -211,7 +223,7 @@ test('F1 stops long narration, reminder and background; certificate reset leaves
   await h.key('ArrowLeft'); await h.until(s => s.cueId === 'P5.choose'); await h.key('F1');
   assert.ok(h.audios.every(a => a.paused)); assert.equal(h.ctx.gameStatus().phase, 'P0');
   const c = harness(); await questions(c, ['ArrowLeft', 'ArrowLeft', 'ArrowLeft']);
-  await reach(c, 'P9C'); await c.key('ArrowRight'); await c.until(s => s.certificateState === 'signing');
+  await reach(c, 'P9C'); await c.key('ArrowRight'); await c.until(s => s.certificateState === 'awaiting' || s.certificateState === 'signing');
   await c.key('F1'); await c.key('ArrowLeft'); await reach(c, 'P5');
   assert.equal(c.ctx.gameStatus().certificateState, null); assert.equal(c.ctx.gameStatus().answers.length, 0);
 });

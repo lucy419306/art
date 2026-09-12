@@ -51,9 +51,15 @@
 }
 .key-panel--yellow { border-color: #c9a05a80; background: linear-gradient(135deg, #52391b32, transparent); box-shadow: 0 0 28px #c9a05a18; }
 .key-panel h2 { margin: 0; font-size: 28px; letter-spacing: 4px; }
+.card { animation: cardIn .4s ease both; }
 .card .key, .overlay .key { margin: 0 0 8px; }
-.overlay { background: #04080bf5; }
+.overlay { background: #010307f6; }
 .overlay .card { background: #10181cf2; }
+.overlay-ghost {
+  opacity: .32; font-size: 15px; letter-spacing: 2px; margin: 0 0 8px; color: #8f9e94;
+}
+.overlay-ghost span { display: inline-block; width: 28px; color: var(--warm); }
+.hesitate-veil > :not(.overlay) { visibility: hidden; }
 .p9r-choice { display: flex; flex-direction: column; align-items: center; width: min(760px, 88vw); }
 .p9r-lead {
   display: flex; flex-direction: column; align-items: center; gap: 14px;
@@ -77,55 +83,129 @@
 .ceremony .frame { padding-top: 12px; padding-bottom: 12px; }
 .ceremony header, .ceremony .rail { height: 0; margin: 0; padding: 0; border: 0; }
 .ceremony footer { height: 0; min-height: 0; border: 0; }
+.ceremony.awaiting-cert footer { visibility: visible; height: 47px; min-height: 47px; border-top: 1px solid #263136; }
 .ceremony #subtitle { min-height: 56px; font-size: 14px; }
 .ceremony #stage { padding: 12px 0; }
 .ceremony-fade { animation: fadeOut var(--fade-ms) forwards; }
-.certificate-line { width: 120px; height: 1px; background: #e6eef0; box-shadow: 0 0 16px #c3e7ee80; }
-.certificate { width: min(500px, 70vw); height: min(710px, calc(100vh - 130px)); min-height: 480px; position: relative; padding: 32px 35px 68px; background: linear-gradient(150deg, #1d2b2e, #0c1417); color: #dce5df; box-shadow: 0 28px 90px #0008; display: flex; flex-direction: column; justify-content: center; }
-.certificate:before { content: ''; position: absolute; inset: 0; border: 1px solid #a8beb4; pointer-events: none; }
-.certificate:after { content: ''; position: absolute; inset: 9px; border: 1px solid #61796b66; pointer-events: none; }
+.certificate {
+  width: min(520px, 72vw); height: min(720px, calc(100vh - 120px)); min-height: 480px; position: relative;
+  padding: 36px 40px 72px; color: #dce8e4;
+  background: #0b1214;
+  display: flex; flex-direction: column; justify-content: center;
+  text-align: left;
+}
+.certificate.collapsed {
+  width: 148px; height: 2px; min-height: 0; padding: 0; overflow: hidden;
+  background: #d7ece8; box-shadow: 0 0 20px #9fd8d090;
+}
+.certificate.collapsed:not(.unfold) { animation: lineBreathe 2.4s ease-in-out infinite; }
+.certificate.collapsed:before, .certificate.collapsed:after, .certificate.collapsed .cert-corners { opacity: 0; }
+.certificate.collapsed #certificate-content,
+.certificate.collapsed .certificate-signatures,
+.certificate.collapsed #final-seal { visibility: hidden; }
+.certificate.unfold {
+  animation: certUnfold var(--unfold-ms, 2.8s) cubic-bezier(.18,.72,.2,1) forwards;
+}
+.certificate:before, .certificate:after { content: ''; position: absolute; pointer-events: none; }
+.certificate:before { inset: 0; border: 1px solid #b7d0c8cc; }
+.certificate:after { inset: 11px; border: 1px solid #7e998d77; }
 .certificate.drawing:before, .certificate.drawing:after { animation: drawCertificate var(--draw-ms) ease-out both; }
-@keyframes drawCertificate { 0% { clip-path: inset(50% 38% 50% 38%); } 45% { clip-path: inset(0 38% 0 38%); } 100% { clip-path: inset(0); } }
-.certificate-section { animation: certificateRow .8s ease-out both; }
-.certificate-section h2 { animation: none; font-size: 24px; line-height: 1.6; letter-spacing: 5px; margin: 12px 0 18px; color: #e7eee7; }
-.cert-institution { font-size: 11px; letter-spacing: 5px; color: #a0b9ab; }
-.certificate p { font-size: 13px; line-height: 1.8; letter-spacing: 1px; margin: 10px 0; color: #b9c9bf; }
-.certificate strong { font-weight: 500; color: #e5eade; }
-.certificate .cert-parties { text-align: left; font-size: 11px; margin-top: 18px; }
-.certificate-signatures { position: absolute; bottom: 25px; left: 35px; right: 35px; display: flex; justify-content: space-between; align-items: center; }
-.certificate-signatures span:not(:empty) { border: 1px solid #b9c6ac80; padding: 9px 7px; color: #c6d4b7; font-size: 10px; letter-spacing: 1px; animation: certificateRow .6s both; }
-#receiver-seal:not(:empty) { transform: rotate(-6deg); }
-.signature-light { position: fixed; width: 2px; height: 45px; background: linear-gradient(transparent, #edffff); box-shadow: 0 0 14px #fff; left: 50%; bottom: 30px; animation: signatureLight var(--light-ms) ease-in-out forwards; }
-@keyframes signatureLight { to { bottom: 17%; left: calc(50% + 160px); opacity: .5; } }
-#final-seal:not(:empty) { position: absolute; top: 40%; left: 50%; margin-left: -61px; width: 122px; height: 122px; border: 3px double #c4d8ad; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: transparent; transform: rotate(-14deg); box-shadow: 0 0 26px #b6d09b20; mix-blend-mode: screen; }
-#final-seal span { font-size: 11px; letter-spacing: 2px; color: #c4d8ad; }
-#final-seal strong { font-size: 24px; margin-top: 6px; letter-spacing: 3px; }
-#final-seal.stamping { animation: sealDrop var(--stamp-ms) ease-in both; }
-@keyframes sealDrop { from { opacity: 0; transform: translateY(-95px) scale(1.6) rotate(-14deg); filter: blur(3px); } to { opacity: 1; transform: translateY(0) scale(1) rotate(-14deg); filter: blur(0); } }
-.certificate.sealed { animation: borderLight 1.8s ease-out both; }
-@keyframes borderLight { from { box-shadow: 0 0 50px #dceecb70, inset 0 0 20px #dceecb40; } to { box-shadow: 0 28px 90px #0008; } }
-.certificate-future { font-size: 10px; letter-spacing: 4px; margin: 12px 0 0; color: #879f94; }
-@keyframes certificateRow { from { opacity: 0; transform: translateY(7px); clip-path: inset(0 0 100% 0); } to { opacity: 1; transform: translateY(0); clip-path: inset(0); } }
+.cert-corners { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.cert-corners i { position: absolute; width: 14px; height: 14px; border: 1px solid #c5ddd6; opacity: .7; }
+.cert-corners i:nth-child(1) { top: -1px; left: -1px; border-right: 0; border-bottom: 0; }
+.cert-corners i:nth-child(2) { top: -1px; right: -1px; border-left: 0; border-bottom: 0; }
+.cert-corners i:nth-child(3) { bottom: -1px; left: -1px; border-right: 0; border-top: 0; }
+.cert-corners i:nth-child(4) { bottom: -1px; right: -1px; border-left: 0; border-top: 0; }
+.cert-scan { display: none; position: absolute; left: 18px; right: 18px; height: 1px; background: #d8fff6; box-shadow: 0 0 12px #9feee0; opacity: .45; z-index: 3; }
+.certificate.writing .cert-scan { display: block; animation: certScan 1.8s linear infinite; }
+.certificate-section { animation: certificateRow .85s ease-out both; position: relative; }
+.certificate-section:after { content: ''; position: absolute; left: -8px; top: 6px; bottom: 6px; width: 1px; background: #9db8b033; }
+.certificate.writing .certificate-section:last-child:after { background: #c5eee6; box-shadow: 0 0 8px #9feee055; }
+.certificate-section h2 { animation: none; font-size: 24px; font-weight: 300; line-height: 1.6; letter-spacing: 6px; margin: 14px 0 20px; color: #eef6f2; text-align: center; }
+.cert-institution { font-size: 11px; letter-spacing: 6px; color: #9bb5ac; text-align: center; }
+.certificate p { font-size: 13px; line-height: 1.85; letter-spacing: 1px; margin: 10px 0; color: #b7c7c0; }
+.certificate strong { font-weight: 500; color: #eef4ef; }
+.certificate .cert-parties { text-align: left; font-size: 11px; margin-top: 18px; letter-spacing: 1px; }
+.certificate-signatures { position: absolute; bottom: 26px; left: 40px; right: 40px; display: flex; justify-content: space-between; align-items: center; }
+.certificate-signatures span:not(:empty) {
+  min-width: 118px; text-align: center; padding: 8px 10px; color: #c6d4b7;
+  font-size: 10px; letter-spacing: 2px; border: 1px solid #b9c6ac70; animation: certificateRow .6s both;
+}
+#receiver-seal:not(:empty) { transform: rotate(-5deg); border-color: #dceee4aa; color: #e7f2ea; }
+.signature-light {
+  position: absolute; width: 1px; height: 34%; left: 74%; bottom: 10%;
+  background: linear-gradient(transparent, #e8fff8, transparent); box-shadow: 0 0 14px #b6efe6aa;
+  animation: signatureLight var(--light-ms) ease-in-out forwards; z-index: 4;
+}
+#final-seal:not(:empty) {
+  position: absolute; top: 36%; left: 50%; margin-left: -70px; width: 140px; height: 140px; z-index: 6;
+  border: 2.5px solid var(--key-red); border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 42% 38%, #4a1816cc, #1a0808e0);
+  transform: rotate(-13deg);
+  box-shadow: 0 0 0 7px #0b1214, 0 0 0 9px #e24a4277, 0 0 36px #e24a4266, inset 0 0 18px #e24a4233;
+  color: #ff7a72;
+}
+#final-seal:not(:empty):before, #final-seal:not(:empty):after {
+  content: ''; position: absolute; border-radius: 50%; pointer-events: none;
+}
+#final-seal:not(:empty):before { inset: 8px; border: 1.5px solid #f07a72cc; }
+#final-seal:not(:empty):after { inset: 14px; border: 1px dashed #e24a4277; }
+#final-seal span { position: relative; z-index: 1; font-size: 12px; letter-spacing: 3px; color: #ff9b94; }
+#final-seal strong { position: relative; z-index: 1; font-size: 28px; margin-top: 6px; letter-spacing: 4px; font-weight: 700; color: #ff4d45; text-shadow: 0 0 12px #e24a4288; }
+#final-seal.stamping { animation: sealDrop var(--stamp-ms) cubic-bezier(.12,.82,.22,1) both; }
+.certificate.sealed:before { box-shadow: inset 0 0 64px #e24a4218; }
+.certificate.sealed #final-seal:not(:empty) { animation: sealGlow 2.6s ease-in-out infinite; }
+.certificate.awaiting #certificate-status { color: var(--key-yellow); }
+.cert-accept-hint {
+  position: absolute; left: 24px; right: 24px; bottom: 96px; text-align: center; z-index: 5;
+  font-size: 13px; letter-spacing: 5px; color: #d5e4de; animation: hintPulse 2.2s ease-in-out infinite;
+}
+.certificate-future {
+  position: relative; z-index: 5; margin: 24px 0 0; display: flex; align-items: center; justify-content: center; gap: 18px;
+  font-size: 17px; letter-spacing: 6px; color: #e8f2ed; animation: certificateRow 1s both;
+}
+.certificate-future i { display: block; width: 72px; height: 1px; background: #e8f2ed; opacity: .42; }
+@keyframes lineBreathe { 50% { opacity: .4; width: 88px; } }
+@keyframes certUnfold {
+  0% { width: 148px; height: 2px; min-height: 0; padding: 0; background: #d7ece8; box-shadow: 0 0 20px #9fd8d090; }
+  30% { width: min(520px, 72vw); height: 2px; min-height: 0; padding: 0; background: #d7ece8; box-shadow: 0 0 28px #9fd8d070; }
+  48% { width: min(520px, 72vw); height: 2px; min-height: 0; padding: 0; background: #0b1214; box-shadow: 0 0 36px #9fd8d028; }
+  100% { width: min(520px, 72vw); height: min(720px, calc(100vh - 120px)); min-height: 480px; padding: 36px 40px 72px; background: #0b1214; box-shadow: 0 0 40px #9fd8d01a; }
+}
+@keyframes drawCertificate { 0% { clip-path: inset(50% 42% 50% 42%); } 40% { clip-path: inset(0 42% 0 42%); } 100% { clip-path: inset(0); } }
+@keyframes certScan { from { top: 14%; opacity: 0; } 18% { opacity: .55; } to { top: 78%; opacity: 0; } }
+@keyframes signatureLight { from { opacity: 0; transform: translateY(18px); } 30% { opacity: 1; } to { bottom: 18%; left: calc(50% + 148px); opacity: .35; } }
+@keyframes sealDrop {
+  0% { opacity: 0; transform: translateY(-96px) scale(1.55) rotate(-13deg); filter: blur(2px); }
+  58% { opacity: 1; transform: translateY(10px) scale(.9) rotate(-13deg); filter: blur(0); }
+  74% { transform: translateY(-6px) scale(1.08) rotate(-13deg); }
+  100% { opacity: 1; transform: translateY(0) scale(1) rotate(-13deg); }
+}
+@keyframes sealGlow {
+  50% { box-shadow: 0 0 0 7px #0b1214, 0 0 0 10px #e24a42aa, 0 0 56px #e24a4277, inset 0 0 22px #e24a4244; }
+}
+@keyframes hintPulse { 50% { opacity: .42; } }
+@keyframes certificateRow { from { opacity: 0; transform: translateY(6px); clip-path: inset(0 0 100% 0); } to { opacity: 1; transform: translateY(0); clip-path: inset(0); } }
 .warm-layer { position: fixed; inset: 0; pointer-events: none; z-index: 1; opacity: 0; transition: opacity var(--guidance-enter-ms, 2.4s) ease; }
-.guidance .warm-layer { opacity: 1; }
+.guidance .warm-layer { opacity: .58; }
 .guidance .grain { z-index: 2; opacity: .1; }
 .guidance .frame { z-index: 3; }
 .guidance { background: #0a0806; color: #efe6d6; }
-.guidance:before { background: radial-gradient(ellipse at 50% 46%, #3a2a1840, transparent 62%); z-index: 0; }
+.guidance:before { background: radial-gradient(ellipse at 50% 52%, #3a2a1826, transparent 58%); z-index: 0; }
 .guidance header, .guidance footer { border-color: #6a543850; }
 .guidance header i { background: var(--warm); box-shadow: 0 0 12px #e1bb7b88; }
 .guidance h1 { color: #f0e2c4; }
 .guidance p, .guidance #subtitle { color: #d8c8a8; }
-.guidance .eyebrow, .guidance header, .guidance .rail, .guidance footer { color: #b9a17a; }
+.guidance .eyebrow, .guidance header, .guidance .rail, .guidance footer { color: #d8c6a0; }
 .warm-wash {
   position: absolute; inset: -20%;
-  background: linear-gradient(125deg, #c48a4a40 0%, #6a3d2455 46%, #2a1812a6 100%);
+  background: linear-gradient(180deg, #c48a4a14 0%, #6a3d2428 42%, #2a18124d 100%);
   background-size: 180% 180%;
   animation: warmDrift 24s ease-in-out infinite alternate;
 }
 .warm-glow {
   position: absolute; width: 46vw; height: 46vw; border-radius: 50%;
-  background: radial-gradient(circle, #d4a05a3d 0%, transparent 72%);
+  background: radial-gradient(circle, #d4a05a22 0%, transparent 72%);
 }
 .warm-glow.g1 { left: 2%; top: 8%; animation: glowDriftA 22s ease-in-out infinite alternate; }
 .warm-glow.g2 { right: 0; top: 32%; animation: glowDriftB 26s ease-in-out infinite alternate; }
@@ -168,12 +248,34 @@
 @keyframes washOut { to { opacity: 0; } }
 @keyframes glowToPoint { to { left: 50%; top: 50%; width: 10px; height: 10px; margin: 0; transform: translate(-50%, -50%); opacity: .2; } }
 @keyframes emberPulse { 0% { opacity: 0; transform: scale(.2); } 40% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.12); } }
+.char { animation: letter .32s both; }
+@keyframes letter { from { opacity: 0; } to { opacity: 1; } }
+@keyframes cardIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scan {
+  from { top: 25%; opacity: 0; filter: blur(5px); }
+  40% { opacity: 1; filter: blur(0); }
+  to { top: 78%; opacity: 0; filter: blur(4px); }
+}
+.assess-copy {
+  font-family: ui-monospace, 'Cascadia Mono', 'SF Mono', Consolas, 'Courier New', monospace;
+  font-size: clamp(22px, 2.5vw, 34px); font-weight: 400; letter-spacing: 8px;
+}
+.orb.assess { animation: assessPulse 9s ease-in-out infinite; }
+@keyframes assessPulse {
+  50% { opacity: .58; transform: scale(.986); box-shadow: 0 0 14px 4px #91c6d640, 0 0 48px 14px #75bcd114; }
+}
+.data .total {
+  border-bottom: 1px solid #d4eef2;
+  box-shadow: 0 1px 0 #d4eef266, 0 10px 22px #91c6d61f;
+}
 @media (max-height: 780px) {
   .certificate { padding: 18px 28px 55px; min-height: 460px; }
   .certificate p { font-size: 11px; line-height: 1.6; margin: 7px 0; }
   .certificate-section h2 { font-size: 20px; margin: 8px 0 12px; }
   .certificate .cert-parties { margin-top: 8px; font-size: 10px; }
   .certificate-signatures { bottom: 17px; }
-  #final-seal:not(:empty) { width: 98px; height: 98px; margin-left: -49px; }
-  #final-seal strong { font-size: 20px; }
+  #final-seal:not(:empty) { width: 118px; height: 118px; margin-left: -59px; }
+  #final-seal strong { font-size: 22px; }
+  .certificate-future { font-size: 14px; letter-spacing: 4px; gap: 12px; }
+  .certificate-future i { width: 48px; }
 }

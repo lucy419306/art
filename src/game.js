@@ -112,7 +112,7 @@ async function sceneP4(sid) {
 }
 async function sceneP8(sid) {
   guard(sid);
-  view(heading('PROCESSING', '正在评估自主决策能力') + orb, 'P8');
+  view('<div class="eyebrow">PROCESSING</div><h1 class="assess-copy">正在评估自主决策能力</h1><div class="orb assess"></div>', 'P8');
   await wait(2000);
   guard(sid);
   if (GameRules.passes(answers)) await passed(sid); else await rejected(sid);
@@ -131,7 +131,10 @@ async function history() {
   view(heading('DECISION HISTORY', '过去 18 年，系统已代替你完成：') + '<div class="data"></div>', 'P3');
   for (const text of ['教育路径选择', '职业选择', '居住地选择', '健康决策', '社交关系优化', '伴侣匹配', '消费选择', '累计替代决策：11,204 次']) {
     const p = document.createElement('p');
-    if (text.startsWith('累计')) p.className = 'total';
+    if (text.startsWith('累计')) {
+      p.className = 'total';
+      await wait(300);
+    }
     document.querySelector('.data').append(p); type(p, text);
     await Promise.all([sfx('beep'), wait(Math.max(650, text.length * C.typeMs))]);
   }
@@ -200,14 +203,23 @@ async function certificate(sid = session) {
   media.stopBackground();
   await wait(C.certificate.fade);
   stage.classList.remove('ceremony-fade');
-  view('<div class="certificate-line"></div>', 'C');
-  await say('c.final'); await pause(); await say('c.handover');
-  view(`<article class="certificate drawing" style="--draw-ms:${C.certificate.border * C.speed}ms">
+  view(`<article class="certificate collapsed" style="--unfold-ms:${C.certificate.expand * C.speed}ms;--draw-ms:${C.certificate.border * C.speed}ms">
+    <div class="cert-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    <div class="cert-scan" aria-hidden="true"></div>
     <div id="certificate-content"></div>
     <div class="certificate-signatures"><span id="issuer-seal"></span><span id="receiver-seal"></span></div>
     <div id="final-seal"></div>
-  </article>`);
-  await wait(C.certificate.border);
+  </article>`, 'C');
+  const cert = document.querySelector('.certificate');
+  const voices = (async () => { await say('c.final'); await pause(); await say('c.handover'); })();
+  await wait(280);
+  cert?.classList.add('unfold');
+  await wait(C.certificate.expand);
+  guard(sid);
+  cert?.classList.remove('collapsed', 'unfold');
+  cert?.classList.add('drawing');
+  await Promise.all([voices, wait(C.certificate.border)]);
+  cert?.classList.add('writing');
   background('certificate', 0.08);
   certificateState = 'writing';
   const sections = [
@@ -223,11 +235,23 @@ async function certificate(sid = session) {
     document.querySelector('#certificate-content').append(div);
     await sfx('paper', C.certificate.section);
   }
-  certificateState = 'signing';
+  cert?.classList.remove('writing');
   document.querySelector('#issuer-seal').textContent = '人类自主权恢复中心';
   await wait(C.certificate.sign);
+  certificateState = 'awaiting';
+  cert?.classList.add('awaiting');
+  cert?.insertAdjacentHTML('beforeend', '<p class="cert-accept-hint">按任意键接受证书</p>');
+  document.body.classList.add('awaiting-cert');
+  keys(['left', 'right', 'third']);
+  await choice(['left', 'right', 'third'], C.certificate.accept);
+  guard(sid);
+  keys();
+  document.body.classList.remove('awaiting-cert');
+  cert?.classList.remove('awaiting');
+  document.querySelector('.cert-accept-hint')?.remove();
+  certificateState = 'signing';
   await sfx('confirm');
-  stage.insertAdjacentHTML('beforeend', `<div class="signature-light" style="--light-ms:${C.certificate.light * C.speed}ms"></div>`);
+  cert?.insertAdjacentHTML('beforeend', `<div class="signature-light" style="--light-ms:${C.certificate.light * C.speed}ms"></div>`);
   await wait(C.certificate.light);
   document.querySelector('#receiver-seal').textContent = '本人接收';
   document.querySelector('.signature-light')?.remove();
@@ -236,14 +260,14 @@ async function certificate(sid = session) {
   seal.style.setProperty('--stamp-ms', `${C.certificate.stamp * C.speed}ms`);
   seal.classList.add('stamping');
   await wait(C.certificate.stamp);
-  document.querySelector('.certificate').classList.add('sealed');
+  cert?.classList.add('sealed');
   document.querySelector('#certificate-status').textContent = '交接完成';
   certificateState = 'complete';
   await sfx('stamp');
   await say('c.complete'); await pause(); await say('c.yours');
   await wait(C.longPause); await say('c.luck'); await pause();
   sub.textContent = '';
-  stage.insertAdjacentHTML('beforeend', '<p class="certificate-future">未来结果：无法预测</p>');
+  stage.insertAdjacentHTML('beforeend', '<p class="certificate-future"><i></i><span>未来结果：无法预测</span><i></i></p>');
   await finish('C', sid);
 }
 
@@ -266,7 +290,7 @@ async function rejected(sid = session) {
 
 function contractView(n) {
   const terms = [1, 2, 3].map(i => GAME_DIALOGUE[`b.term${i}`]);
-  view('<div class="eyebrow">RESTORATION / CONSENT</div><h2>如仍要恢复自主权，请确认你接受以下全部后果：</h2><p class="prompt">若接受，请按任意按钮。</p><div class="contract">' + terms.slice(0, n + 1).map((t, i) => `<div class="check"><span>${i < n ? '✓' : '□'}</span>${t}</div>`).join('') + '</div>', 'P10B');
+  view('<div class="eyebrow">RESTORATION / CONSENT</div><h2>如仍要恢复自主权，请确认你接受以下全部后果：</h2><p class="prompt">若接受，请按任意按钮。</p><div class="contract">' + terms.slice(0, n + 1).map((t, i) => `<div class="check${i < n ? ' done' : ''}"><span>${i < n ? '✓' : '□'}</span>${t}</div>`).join('') + '</div>', 'P10B');
 }
 async function endingBCore(sid = session) {
   guard(sid);
@@ -292,12 +316,19 @@ async function contract(sid = session) {
     hesitate = false;
     const a = await choice(['left', 'right', 'third'], waitMs);
     if (a === 'timeout') {
-      stage.insertAdjacentHTML('beforeend', '<div class="overlay"><div class="eyebrow">CONFIRMATION REQUIRED</div><p>系统检测到您的犹豫。</p><h2>是否还想要拥有自主决策权？</h2><div class="choices"><div class="card">' + GameKeys.icon('left', 'sm', 'breathe') + '<h2>否 · 放弃</h2></div><div class="card warm">' + GameKeys.icon('right', 'sm', 'breathe') + '<h2>是 · 继续</h2></div></div></div>');
+      stage.classList.add('hesitate-veil');
+      const ghosts = [...stage.querySelectorAll('.check.done')].map(el => `<p class="overlay-ghost">${el.innerHTML}</p>`).join('');
+      stage.insertAdjacentHTML('beforeend', '<div class="overlay">' + ghosts + '<div class="eyebrow">CONFIRMATION REQUIRED</div><p>系统检测到您的犹豫。</p><h2>是否还想要拥有自主决策权？</h2><div class="choices"><div class="card">' + GameKeys.icon('left', 'sm', 'breathe') + '<h2>否 · 放弃</h2></div><div class="card warm">' + GameKeys.icon('right', 'sm', 'breathe') + '<h2>是 · 继续</h2></div></div></div>');
       keys(['left', 'right']);
       await say('b.hesitate'); await pause(); await say('b.want');
       const answer = await choice(['left', 'right'], C.hesitationAnswerTimeout);
-      if (answer === 'right') { await say('b.continue'); continue; }
+      if (answer === 'right') {
+        stage.classList.remove('hesitate-veil');
+        await say('b.continue');
+        continue;
+      }
       if (answer === 'timeout') { await say('a3.noAnswer'); await pause(); }
+      stage.classList.remove('hesitate-veil');
       stage.querySelector('.overlay')?.remove();
       await say('a3.confirm'); await pause(); await say('a3.hesitation'); await pause();
       view(heading('APPLICATION TERMINATED', '自主决策权申请：已终止'));

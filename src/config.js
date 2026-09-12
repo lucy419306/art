@@ -5,9 +5,9 @@ window.GAME_CONFIG = {
   questionPrompt: 10000, questionTimeout: 15000,
   finalPrompt: 30000, finalTimeout: 90000,
   rejectionTimeout: 15000, hesitationTimeout: 5000, hesitationAnswerTimeout: 15000,
-  resetTimeout: 90000, mediaLoadTimeout: 10000, mediaStallTimeout: 15000,
+  resetTimeout: 30000, mediaLoadTimeout: 10000, mediaStallTimeout: 15000,
   guidanceEnter: 2400, guidanceClose: 2400,
-  certificate: { fade: 1800, border: 2200, section: 1800, sign: 1000, light: 1400, stamp: 1600 },
+  certificate: { fade: 1800, expand: 2800, border: 1600, section: 1800, sign: 800, light: 1400, stamp: 1600, accept: 15000 },
   assets: { voice: {}, sfx: {}, bgm: {}, video: {} }
 };
 // dialogue.js 列出每句默认 MP3 文件名，放入对应目录、重启即可自动识别。
