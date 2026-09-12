@@ -292,6 +292,13 @@ test('voice manifest has no unexpected missing required cues', () => {
   const pending = new Set(['P6.left', 'b.pain', 'c.pain']);
   assert.ok(missing.every(id => pending.has(id)), `unexpected missing cues: ${missing.join(', ')}`);
 });
+test('supplemental recordings keep their source files and receive per-cue level matching', () => {
+  assert.equal(voiceCues['P6.left'].file, '../assets/voice/evaluation/该匹配由系统预先安排。.mp3');
+  assert.equal(voiceCues['P6.left'].volume, 0.72);
+  assert.equal(voiceCues['b.pain'].file, '../assets/voice/evaluation/系统将不再替你删除所有痛苦。.mp3');
+  assert.equal(voiceCues['b.pain'].volume, 0.84);
+  assert.equal(voiceCues['c.pain'].volume, 0.84);
+});
 test('long reminder finishes before automatic choice; manual choice interrupts it immediately', async () => {
   for (const manual of [false, true]) {
     const h = harness({ [voice('P5.prompt')]: 9000 }); await h.key('ArrowLeft'); await reach(h, 'P5');
@@ -412,7 +419,7 @@ test('P2 audio chain: intro -> loop, 7 card beeps, ending & P2-3 intro paired be
   assert.equal(p3_4LoopAudio.paused, false, 'P3-4 loop is playing concurrently with Loading');
 });
 
-test('P3 history typing: first 7 lines silent, 8th line triggers beep; valid button press triggers beep', async () => {
+test('P3 history typing stays free of mismatched beeps; valid button press still triggers feedback', async () => {
   const beepPath = '../assets/sfx/P2 七张档案卡.mp3';
   const p3_4Loop = '../assets/sfx/P3-4 背景声loop.mp3';
   const audioFiles = {
@@ -439,15 +446,10 @@ test('P3 history typing: first 7 lines silent, 8th line triggers beep; valid but
   assert.ok(loopAudio && !loopAudio.paused, 'P3-4 loop audio should play during history');
 
   const beepsBeforeHistory = h.audios.filter(a => a.path === beepPath).length;
-  // 等待直到前 7 行打完（第 8 行累计出现前）
-  await h.until(() => h.elements.get('.data').children.length === 7);
-  const beepsAfter7Lines = h.audios.filter(a => a.path === beepPath).length;
-  assert.equal(beepsAfter7Lines, beepsBeforeHistory, 'First 7 lines of history must produce NO beep');
-
-  // 第 8 行累计出现时，触发 1 次 beep
+  // 八行数据（包括累计行）均不播放固定长度提示音，避免与逐字速度错位。
   await h.until(() => h.elements.get('.data').children.length === 8);
   const beepsAfter8thLine = h.audios.filter(a => a.path === beepPath).length;
-  assert.equal(beepsAfter8thLine, beepsBeforeHistory + 1, '8th total line must trigger beep');
+  assert.equal(beepsAfter8thLine, beepsBeforeHistory, 'History data lines must produce no beep');
 
   // 到达第一题等待用户按键阶段
   await reach(h, 'P5');
@@ -1016,7 +1018,5 @@ test('ending B plays same audio as ending C across certificate ceremony', async 
   await h.until(() => h.audios.some(a => a.path === voice('c.luck')));
   assert.ok(h.audios.some(a => a.path === voice('c.luck')), 'c.luck must play after sealing in ending B');
 });
-
-
 
 

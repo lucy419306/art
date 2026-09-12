@@ -85,7 +85,7 @@ async function say(id, { el = sub, fallback, signal = run.signal } = {}) {
     // 以真正开始出声的 playing 事件为共同起点，避免加载延迟造成声画错位。
     onStart: duration => { if (!shown) { shown = true; voiceType(el, text, duration); } },
     onFallback: showFallback
-  });
+  }, cue?.volume ?? 1);
 }
 const sfx = (id, fallback = 0, volume, signal = run.signal) => devMuted ? Promise.resolve() : media.play('sfx', id, fallback, signal, null, volume);
 function background(id, volume) { if (!devMuted) media.backgroundTrack(id, run.signal, volume); }
@@ -231,11 +231,10 @@ async function history() {
   }
   for (const text of ['教育路径选择', '职业选择', '居住地选择', '健康决策', '社交关系优化', '伴侣匹配', '消费选择', '累计替代决策：11,204 次']) {
     const p = document.createElement('p');
-    const isTotal = text.startsWith('累计');
-    if (isTotal) p.className = 'total';
+    if (text.startsWith('累计')) p.className = 'total';
     document.querySelector('.data').append(p); type(p, text);
-    const audioPromise = isTotal ? sfx('beep').catch(e => { if (e.message !== 'reset') console.error(e); }) : Promise.resolve();
-    await Promise.all([audioPromise, wait(Math.max(650, text.length * C.typeMs))]);
+    // 数据逐字出现时不叠加提示音，避免固定长度音效与文字节奏错位。
+    await wait(Math.max(650, text.length * C.typeMs));
   }
   await say('p3.count'); await pause(); await say('p3.perfect');
   await wait(C.pageTransitionPause);
