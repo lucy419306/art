@@ -45,7 +45,7 @@ function harness(audioFiles = {}) {
   };
   ctx.window = ctx; ctx.addEventListener = (_, f) => { keyboard = f; };
   vm.createContext(ctx);
-  for (const f of ['config.js', 'dialogue.js', 'rules.js', 'media.js', 'game.js']) vm.runInContext(fs.readFileSync('src/' + f, 'utf8'), ctx);
+  for (const f of ['config.js', 'dialogue.js', 'rules.js', 'media.js', 'beats.js', 'game.js']) vm.runInContext(fs.readFileSync('src/' + f, 'utf8'), ctx);
   async function flush() { for (let i = 0; i < 25; i++) await Promise.resolve(); }
   async function step() {
     await flush();

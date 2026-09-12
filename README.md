@@ -32,6 +32,14 @@ npm run pack:mac
 
 开场红键隐藏且无效。待机可用白/黄键开始。契约三种颜色均可确认；犹豫询问期间红键无效。开场无法跳过，长按重复事件无效。Command + Q 退出。
 
+## 开发者模式
+
+```sh
+npm run dev
+```
+
+Windows PowerShell 若报脚本权限错误，用 `npm.cmd run dev`。Ctrl+Shift+D 开关拍跳转面板（仅 `--dev`）。点列表直达该拍；[上一拍][下一拍][静音]；Ctrl+Shift+← / → 切相邻拍。`npm start` 不带 `--dev` 时面板与开发快捷键完全关闭。
+
 ## MP3 素材
 
 完整逐句文件路径和配音文字见 `assets/素材清单.md`。
