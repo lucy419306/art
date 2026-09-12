@@ -195,7 +195,7 @@ async function question(i) {
   if (a === 'timeout') { a = 'right'; await say(`${id}.auto`); }
   answers.push(a);
   // 选择事件后的同一轮微任务即显示反馈，不等待音效加载。
-  await view(heading('RESPONSE RECORDED', '已记录。'), id);
+  await view(heading('RESPONSE RECORDED', '已记录'), id);
   if (i === 0) {
     await Promise.all([a === 'right' ? sfx('thud') : Promise.resolve(), say(`${id}.${a}`)]);
   } else {
@@ -334,7 +334,7 @@ async function rejected(sid = session) {
 
 async function contractView(n) {
   const terms = [1, 2, 3].map(i => GAME_DIALOGUE[`b.term${i}`]);
-  await view('<div class="eyebrow">RESTORATION / CONSENT</div><h2>如仍要恢复自主权，请确认你接受以下全部后果：</h2><p class="prompt">若接受，请按任意按钮。</p><div class="contract">' + terms.slice(0, n + 1).map((t, i) => `<div class="check"><span>${i < n ? '✓' : '□'}</span>${t}</div>`).join('') + '</div>', 'P10B', !!stage.querySelector('.contract'));
+  await view('<div class="eyebrow">RESTORATION / CONSENT</div><h2>如仍要恢复自主权，请确认你接受以下全部后果：</h2><div class="contract">' + terms.slice(0, n + 1).map((t, i) => `<div class="check"><span>${i < n ? '✓' : '□'}</span>${t}</div>`).join('') + '</div>', 'P10B', !!stage.querySelector('.contract'));
 }
 async function endingBCore(sid = session) {
   guard(sid);
@@ -353,7 +353,6 @@ async function contract(sid = session) {
   if (contractCount >= 3) return endingBCore(sid);
   await view(heading('OVERRIDE REQUEST', '检测到强制收回请求。'), 'P10B');
   await say('b.detect'); await pause(); await say('b.risk');
-  await contractView(0); keys(['left', 'right', 'third']); await say('b.accept');
   while (contractCount < 3) {
     guard(sid);
     await contractView(contractCount);
