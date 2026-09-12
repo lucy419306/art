@@ -100,6 +100,7 @@ test('P7 detect page uses four pause beats and no glitch config', () => {
   const h = harness();
   assert.equal(h.ctx.GAME_CONFIG.p7BlankBeats, 4);
   assert.equal(h.ctx.GAME_CONFIG.p7Glitch, undefined);
+  assert.equal(h.ctx.GAME_CONFIG.luckPause, 1200);
 });
 test('all eight combinations: only all-white answers pass', () => {
   const { passes } = require('../src/rules.js');
@@ -129,6 +130,16 @@ test('C: certificate auto-accepts after 15s if no key', async () => {
   await h.until(s => s.certificateState === 'signing');
   assert.equal(h.now - t, 15000);
   await h.until(s => s.ending === 'C');
+});
+test('C: final good-luck line follows the preceding voice after a 1.2-second gap', async () => {
+  const h = harness({ [voice('c.yours')]: 1000 });
+  await questions(h, ['ArrowLeft', 'ArrowLeft', 'ArrowLeft']);
+  await reach(h, 'P9C'); await h.key('ArrowRight');
+  await h.until(s => s.certificateState === 'awaiting'); await h.key('Space');
+  await h.until(s => s.cueId === 'c.yours');
+  const t = h.now;
+  await h.until(s => s.cueId === 'c.luck');
+  assert.equal(h.now - t, 1000 + h.ctx.GAME_CONFIG.luckPause);
 });
 test('A2: white final choice abandons, no certificate', async () => {
   const h = harness(); await questions(h, ['ArrowLeft', 'ArrowLeft', 'ArrowLeft']);

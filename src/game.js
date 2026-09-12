@@ -220,10 +220,10 @@ async function question(i) {
 async function result(id = phase) {
   await view(heading('AUTONOMY RESTORED', '自主权已恢复') + '<p class="result">未来结果：无法预测</p>', id);
 }
-async function costs(prefix, gaps = true) {
+async function costs(prefix, gaps = true, tailPause = C.longPause) {
   await say(prefix + '.errors'); if (gaps) await pause();
   await say(prefix + '.pain'); if (gaps) await pause();
-  await say(prefix + '.optimal'); await wait(C.longPause);
+  await say(prefix + '.optimal'); await wait(tailPause);
 }
 async function passed(sid = session) {
   guard(sid);
@@ -321,7 +321,7 @@ async function certificate(sid = session, endingId = 'C') {
   await sfx('stamp');
   if (endingId === 'C') {
     await say('c.complete'); await pause(); await say('c.yours');
-    await wait(C.longPause); await say('c.luck'); await pause();
+    await wait(C.luckPause); await say('c.luck'); await pause();
   }
   sub.textContent = '';
   stage.insertAdjacentHTML('beforeend', '<p class="certificate-future"><i></i><span>未来结果：无法预测</span><i></i></p>');
@@ -358,7 +358,7 @@ async function endingBCore(sid = session) {
   await wait(3000);
   guard(sid);
   document.body.classList.remove('minimal'); background('evaluation');
-  await result('B'); await say('b.confirm'); await pause(); await costs('b', false);
+  await result('B'); await say('b.confirm'); await pause(); await costs('b', false, C.luckPause);
   await say('b.luck'); await pause();
   return certificate(sid, 'B');
 }
