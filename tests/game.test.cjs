@@ -73,6 +73,11 @@ test('WithoutText variant makes only the bottom subtitle layer fully transparent
   assert.match(css, /#subtitle\{opacity:0\}/);
   assert.doesNotMatch(css, /#stage\{[^}]*opacity:0/);
 });
+test('P4 narration subtitle includes the missing 题 character', () => {
+  const expected = '本次考核将以三项决策模拟题，评估你的自主决策能力：如何生存，与谁亲密，以及如何面对无法删除的记忆。';
+  assert.equal(voiceCues['p4.meaning'].transcript, expected);
+  assert.equal(harness().ctx.GAME_DIALOGUE['p4.meaning'], expected);
+});
 const reach = (h, phase) => h.until(s => s.phase === phase && s.waiting);
 async function questions(h, choices) {
   await h.key('ArrowLeft');
