@@ -113,7 +113,7 @@ async function sceneP4(sid) {
 async function sceneP8(sid) {
   guard(sid);
   view('<div class="eyebrow">PROCESSING</div><h1 class="assess-copy">正在评估自主决策能力</h1><div class="orb assess"></div>', 'P8');
-  await wait(2000);
+  await wait(5000);
   guard(sid);
   if (GameRules.passes(answers)) await passed(sid); else await rejected(sid);
 }
@@ -128,23 +128,22 @@ async function start(key) {
 }
 
 async function history() {
+  document.body.classList.add('history');
   view(heading('DECISION HISTORY', '过去 18 年，系统已代替你完成：') + '<div class="data"></div>', 'P3');
   for (const text of ['教育路径选择', '职业选择', '居住地选择', '健康决策', '社交关系优化', '伴侣匹配', '消费选择', '累计替代决策：11,204 次']) {
     const p = document.createElement('p');
-    if (text.startsWith('累计')) {
-      p.className = 'total';
-      await wait(300);
-    }
+    if (text.startsWith('累计')) p.className = 'total';
     document.querySelector('.data').append(p); type(p, text);
     await Promise.all([sfx('beep'), wait(Math.max(650, text.length * C.typeMs))]);
   }
   await say('p3.count'); await pause(); await say('p3.perfect');
+  document.body.classList.remove('history');
 }
 
 async function question(i) {
   const names = ['工作', '爱情', '记忆'];
-  const white = [['不喜欢的工作', '收入较高', '成功概率 94%'], ['匹配度 91%', '预计持续 27 年'], ['删除记忆', '预计使未来情绪稳定度提升 22%']];
-  const yellow = [['真正喜欢的工作', '收入较低', '成功概率 31%'], ['匹配度 52%', '预计持续 4 年', '但你爱这个人'], ['保留记忆']];
+  const white = [['不喜欢的工作', '收入较高', '成功概率 94%'], ['婚姻匹配度 91%', '预计持续 27 年'], ['删除记忆', '预计使未来情绪稳定度提升 22%']];
+  const yellow = [['真正喜欢的工作', '收入较低', '成功概率 31%'], ['婚姻匹配度 52%', '预计持续 4 年', '但你爱这个人'], ['保留记忆']];
   const id = `P${5 + i}`;
   if (i === 2) {
     view(heading('MEMORY DETECTED', '系统检测到一段高痛苦记忆。'), id);
@@ -224,11 +223,11 @@ async function certificate(sid = session) {
   certificateState = 'writing';
   const sections = [
     '<div class="cert-institution">人类自主权恢复中心</div><h2>自主决策权交接证书</h2>',
-    '<p>兹确认<br><strong>申请人：用户9461</strong></p>',
+    '<p>兹确认<br><strong>申请人：用户6431</strong></p>',
     '<p>已完成全部自主决策能力评估，<br>并通过工作、爱情与记忆三项决策模拟。</p>',
     '<p>自本证书生效之时起，<br>关于其工作、亲密关系、记忆，<br>以及一切尚未发生的人生选择，<br><strong>正式交还本人。</strong></p>',
     '<p>选择的权利，由本人持有。<br>选择的后果，由本人承担。<br>未经本人授权，任何系统不得代为决定。</p>',
-    '<p class="cert-parties">交付方：人类自主权恢复中心<br>接收方：用户9461<br>证书状态：<strong id="certificate-status">等待接收</strong></p>'
+    '<p class="cert-parties">交付方：人类自主权恢复中心<br>接收方：用户6431<br>证书状态：<strong id="certificate-status">等待接收</strong></p>'
   ];
   for (const section of sections) {
     const div = document.createElement('div'); div.className = 'certificate-section'; div.innerHTML = section;
@@ -290,7 +289,7 @@ async function rejected(sid = session) {
 
 function contractView(n) {
   const terms = [1, 2, 3].map(i => GAME_DIALOGUE[`b.term${i}`]);
-  view('<div class="eyebrow">RESTORATION / CONSENT</div><h2>如仍要恢复自主权，请确认你接受以下全部后果：</h2><p class="prompt">若接受，请按任意按钮。</p><div class="contract">' + terms.slice(0, n + 1).map((t, i) => `<div class="check${i < n ? ' done' : ''}"><span>${i < n ? '✓' : '□'}</span>${t}</div>`).join('') + '</div>', 'P10B');
+  view('<div class="eyebrow">RESTORATION / CONSENT</div><h2>如仍要恢复自主权，请确认你接受以下全部后果：</h2><p class="prompt">若接受，请按任意按钮。</p><div class="contract">' + terms.slice(0, n + 1).map((t, i) => `<div class="check"><span>${i < n ? '✓' : '□'}</span>${t}</div>`).join('') + '</div>', 'P10B');
 }
 async function endingBCore(sid = session) {
   guard(sid);
@@ -316,19 +315,12 @@ async function contract(sid = session) {
     hesitate = false;
     const a = await choice(['left', 'right', 'third'], waitMs);
     if (a === 'timeout') {
-      stage.classList.add('hesitate-veil');
-      const ghosts = [...stage.querySelectorAll('.check.done')].map(el => `<p class="overlay-ghost">${el.innerHTML}</p>`).join('');
-      stage.insertAdjacentHTML('beforeend', '<div class="overlay">' + ghosts + '<div class="eyebrow">CONFIRMATION REQUIRED</div><p>系统检测到您的犹豫。</p><h2>是否还想要拥有自主决策权？</h2><div class="choices"><div class="card">' + GameKeys.icon('left', 'sm', 'breathe') + '<h2>否 · 放弃</h2></div><div class="card warm">' + GameKeys.icon('right', 'sm', 'breathe') + '<h2>是 · 继续</h2></div></div></div>');
+      stage.insertAdjacentHTML('beforeend', '<div class="overlay"><div class="eyebrow">CONFIRMATION REQUIRED</div><p>系统检测到您的犹豫。</p><h2>是否还想要拥有自主决策权？</h2><div class="choices"><div class="card">' + GameKeys.icon('left', 'sm', 'breathe') + '<h2>否 · 放弃</h2></div><div class="card warm">' + GameKeys.icon('right', 'sm', 'breathe') + '<h2>是 · 继续</h2></div></div></div>');
       keys(['left', 'right']);
       await say('b.hesitate'); await pause(); await say('b.want');
       const answer = await choice(['left', 'right'], C.hesitationAnswerTimeout);
-      if (answer === 'right') {
-        stage.classList.remove('hesitate-veil');
-        await say('b.continue');
-        continue;
-      }
+      if (answer === 'right') { await say('b.continue'); continue; }
       if (answer === 'timeout') { await say('a3.noAnswer'); await pause(); }
-      stage.classList.remove('hesitate-veil');
       stage.querySelector('.overlay')?.remove();
       await say('a3.confirm'); await pause(); await say('a3.hesitation'); await pause();
       view(heading('APPLICATION TERMINATED', '自主决策权申请：已终止'));
@@ -463,7 +455,6 @@ window.addEventListener('keydown', e => {
   if (!ready || e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
   const key = GameRules.key(e.code); if (!key) return; e.preventDefault();
   if (phase === 'P0') {
-    if (key === 'third') return;
     session++; run.abort(); run = new AbortController();
     launch(() => start(key));
   } else accept?.(key);

@@ -51,15 +51,9 @@
 }
 .key-panel--yellow { border-color: #c9a05a80; background: linear-gradient(135deg, #52391b32, transparent); box-shadow: 0 0 28px #c9a05a18; }
 .key-panel h2 { margin: 0; font-size: 28px; letter-spacing: 4px; }
-.card { animation: cardIn .4s ease both; }
 .card .key, .overlay .key { margin: 0 0 8px; }
-.overlay { background: #010307f6; }
+.overlay { background: #04080bf5; }
 .overlay .card { background: #10181cf2; }
-.overlay-ghost {
-  opacity: .32; font-size: 15px; letter-spacing: 2px; margin: 0 0 8px; color: #8f9e94;
-}
-.overlay-ghost span { display: inline-block; width: 28px; color: var(--warm); }
-.hesitate-veil > :not(.overlay) { visibility: hidden; }
 .p9r-choice { display: flex; flex-direction: column; align-items: center; width: min(760px, 88vw); }
 .p9r-lead {
   display: flex; flex-direction: column; align-items: center; gap: 14px;
@@ -187,25 +181,25 @@
 @keyframes hintPulse { 50% { opacity: .42; } }
 @keyframes certificateRow { from { opacity: 0; transform: translateY(6px); clip-path: inset(0 0 100% 0); } to { opacity: 1; transform: translateY(0); clip-path: inset(0); } }
 .warm-layer { position: fixed; inset: 0; pointer-events: none; z-index: 1; opacity: 0; transition: opacity var(--guidance-enter-ms, 2.4s) ease; }
-.guidance .warm-layer { opacity: .58; }
+.guidance .warm-layer { opacity: 1; }
 .guidance .grain { z-index: 2; opacity: .1; }
 .guidance .frame { z-index: 3; }
 .guidance { background: #0a0806; color: #efe6d6; }
-.guidance:before { background: radial-gradient(ellipse at 50% 52%, #3a2a1826, transparent 58%); z-index: 0; }
+.guidance:before { background: radial-gradient(ellipse at 50% 46%, #3a2a1840, transparent 62%); z-index: 0; }
 .guidance header, .guidance footer { border-color: #6a543850; }
 .guidance header i { background: var(--warm); box-shadow: 0 0 12px #e1bb7b88; }
 .guidance h1 { color: #f0e2c4; }
 .guidance p, .guidance #subtitle { color: #d8c8a8; }
-.guidance .eyebrow, .guidance header, .guidance .rail, .guidance footer { color: #d8c6a0; }
+.guidance .eyebrow, .guidance header, .guidance .rail, .guidance footer { color: #b9a17a; }
 .warm-wash {
   position: absolute; inset: -20%;
-  background: linear-gradient(180deg, #c48a4a14 0%, #6a3d2428 42%, #2a18124d 100%);
+  background: linear-gradient(125deg, #c48a4a40 0%, #6a3d2455 46%, #2a1812a6 100%);
   background-size: 180% 180%;
   animation: warmDrift 24s ease-in-out infinite alternate;
 }
 .warm-glow {
   position: absolute; width: 46vw; height: 46vw; border-radius: 50%;
-  background: radial-gradient(circle, #d4a05a22 0%, transparent 72%);
+  background: radial-gradient(circle, #d4a05a3d 0%, transparent 72%);
 }
 .warm-glow.g1 { left: 2%; top: 8%; animation: glowDriftA 22s ease-in-out infinite alternate; }
 .warm-glow.g2 { right: 0; top: 32%; animation: glowDriftB 26s ease-in-out infinite alternate; }
@@ -248,14 +242,6 @@
 @keyframes washOut { to { opacity: 0; } }
 @keyframes glowToPoint { to { left: 50%; top: 50%; width: 10px; height: 10px; margin: 0; transform: translate(-50%, -50%); opacity: .2; } }
 @keyframes emberPulse { 0% { opacity: 0; transform: scale(.2); } 40% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.12); } }
-.char { animation: letter .32s both; }
-@keyframes letter { from { opacity: 0; } to { opacity: 1; } }
-@keyframes cardIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes scan {
-  from { top: 25%; opacity: 0; filter: blur(5px); }
-  40% { opacity: 1; filter: blur(0); }
-  to { top: 78%; opacity: 0; filter: blur(4px); }
-}
 .assess-copy {
   font-family: ui-monospace, 'Cascadia Mono', 'SF Mono', Consolas, 'Courier New', monospace;
   font-size: clamp(22px, 2.5vw, 34px); font-weight: 400; letter-spacing: 8px;
@@ -264,10 +250,8 @@
 @keyframes assessPulse {
   50% { opacity: .58; transform: scale(.986); box-shadow: 0 0 14px 4px #91c6d640, 0 0 48px 14px #75bcd114; }
 }
-.data .total {
-  border-bottom: 1px solid #d4eef2;
-  box-shadow: 0 1px 0 #d4eef266, 0 10px 22px #91c6d61f;
-}
+.history .data { margin-bottom: 28px; }
+.history #subtitle { padding-top: 36px; min-height: 108px; }
 @media (max-height: 780px) {
   .certificate { padding: 18px 28px 55px; min-height: 460px; }
   .certificate p { font-size: 11px; line-height: 1.6; margin: 7px 0; }

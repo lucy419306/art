@@ -164,12 +164,14 @@ test('A3: hesitation unanswered for 15 seconds terminates', async () => {
   const h = harness(); await toContract(h); await reach(h, 'P10B'); await h.step(); await reach(h, 'P10B');
   const t = h.now; await h.step(); assert.equal(h.now - t, 15000); await h.until(s => s.ending === 'A3');
 });
-test('red is hidden/disabled at standby; held keys cannot start; F1 cancels opening', async () => {
-  const h = harness(); await h.key('Space'); assert.equal(h.ctx.gameStatus().phase, 'P0');
+test('standby accepts any of three keys; held keys cannot start; F1 cancels opening', async () => {
+  const h = harness();
+  await h.key('ArrowLeft', true); assert.equal(h.ctx.gameStatus().phase, 'P0');
   assert.match(h.elements.get('#keys').innerHTML, /白键/);
   assert.match(h.elements.get('#keys').innerHTML, /黄键/);
   assert.match(h.elements.get('#keys').innerHTML, /红键/);
-  await h.key('ArrowLeft', true); assert.equal(h.ctx.gameStatus().phase, 'P0');
+  await h.key('Space'); assert.equal(h.ctx.gameStatus().phase, 'P1');
+  await h.key('F1'); assert.equal(h.ctx.gameStatus().phase, 'P0');
   await h.key('ArrowLeft'); await h.key('ArrowRight'); assert.equal(h.ctx.gameStatus().phase, 'P1');
   await h.key('F1'); assert.equal(h.ctx.gameStatus().phase, 'P0');
   await h.key('ArrowLeft'); await reach(h, 'P5'); assert.equal(h.ctx.gameStatus().answers.length, 0);
