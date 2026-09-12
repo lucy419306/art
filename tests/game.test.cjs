@@ -256,6 +256,21 @@ test('contract accept prompt plays once; five-second timer starts after first te
   await reach(h, 'P10B'); await h.key('ArrowRight'); await reach(h, 'P10B');
   assert.equal(h.audios.filter(a => a.path === voice('b.accept')).length, 1);
 });
+test('P10B waits 1.5 seconds after accept prompt and reveals term one only when its voice starts', async () => {
+  const h = harness({ [voice('b.accept')]: 1000, [voice('b.term1')]: 1000 });
+  await toContract(h);
+  await h.until(s => s.cueId === 'b.accept');
+  const acceptStart = h.now;
+  assert.doesNotMatch(h.elements.get('#stage').innerHTML, /你可能会选择错误的人/);
+
+  await h.until(s => s.cueId === 'b.term1');
+  assert.equal(h.now - acceptStart, 1000 + h.ctx.GAME_CONFIG.contractLeadPause);
+  assert.equal(h.ctx.GAME_CONFIG.contractLeadPause, 1500);
+  assert.doesNotMatch(h.elements.get('#stage').innerHTML, /你可能会选择错误的人/);
+
+  await h.until(() => /你可能会选择错误的人/.test(h.elements.get('#stage').innerHTML));
+  assert.equal(h.now - acceptStart, 2500, 'Term text and voice must begin together after the 1.5-second pause');
+});
 test('voice starts subtitle reveal and finishes it 0-2 seconds before audio ends', async () => {
   const duration = 5232;
   const h = harness({ [voice('P5.choose')]: duration });
@@ -790,6 +805,7 @@ test('P10B tick plays during terms narration', async () => {
 
   h.ctx.enterBeat('P10B');
   await h.until(s => s.cueId === 'b.term1');
+  await h.until(() => h.audios.some(a => a.path === p10bTickAudio));
 
   const tickAudio = h.audios.find(a => a.path === p10bTickAudio);
   assert.ok(tickAudio && !tickAudio.paused, 'P10B tick sfx must play during term narration');
@@ -1018,4 +1034,3 @@ test('ending B plays same audio as ending C across certificate ceremony', async 
   await h.until(() => h.audios.some(a => a.path === voice('c.luck')));
   assert.ok(h.audios.some(a => a.path === voice('c.luck')), 'c.luck must play after sealing in ending B');
 });
-

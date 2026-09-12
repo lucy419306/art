@@ -71,20 +71,27 @@ function cards(title, white, yellow) {
   return heading('DECISION SIMULATION', title) + `<div class="choices">${[white, yellow].map((card, i) =>
     `<div class="card ${i ? 'warm' : ''}"><label>${i ? '黄' : '白'}键</label><h2>${card[0]}</h2>${card.slice(1).map(t => `<p>${t}</p>`).join('')}</div>`).join('')}</div><p class="prompt">请选择</p>`;
 }
-async function say(id, { el = sub, fallback, signal = run.signal } = {}) {
+async function say(id, { el = sub, fallback, signal = run.signal, onStart } = {}) {
   const dialogue = GAME_DIALOGUE[id];
   if (dialogue === undefined) throw new Error(`缺少台词：${id}`);
   const cue = window.GAME_VOICE_CUES?.[id];
   const text = cue?.transcript ?? dialogue;
   cueId = id;
   const fallbackMs = fallback ?? fallbackFor(text);
-  if (devMuted) { type(el, text); await media.delay(fallbackMs, signal); return; }
-  let shown = false;
-  const showFallback = () => { if (!shown) { shown = true; type(el, text); } };
+  if (devMuted) { onStart?.(fallbackMs); type(el, text); await media.delay(fallbackMs, signal); return; }
+  let shown = false, started = false;
+  const begin = (duration, voiceTimed) => {
+    if (!started) { started = true; onStart?.(duration); }
+    if (!shown) {
+      shown = true;
+      if (voiceTimed) voiceType(el, text, duration);
+      else type(el, text);
+    }
+  };
   await media.play('voice', id, fallbackMs, signal, {
     // 以真正开始出声的 playing 事件为共同起点，避免加载延迟造成声画错位。
-    onStart: duration => { if (!shown) { shown = true; voiceType(el, text, duration); } },
-    onFallback: showFallback
+    onStart: duration => begin(duration, true),
+    onFallback: () => begin(fallbackMs, false)
   }, cue?.volume ?? 1);
 }
 const sfx = (id, fallback = 0, volume, signal = run.signal) => devMuted ? Promise.resolve() : media.play('sfx', id, fallback, signal, null, volume);
@@ -451,9 +458,12 @@ async function rejected(sid = session) {
   await say('r.noRequest'); await say('r.maintain'); await endingA('A1', sid);
 }
 
-async function contractView(n) {
+function contractHtml(n) {
   const terms = [1, 2, 3].map(i => GAME_DIALOGUE[`b.term${i}`]);
-  await view('<div class="eyebrow">RESTORATION / CONSENT</div><h2>如仍要恢复自主权，请确认你接受以下全部后果：</h2><div class="contract">' + terms.slice(0, n + 1).map((t, i) => `<div class="check"><span>${i < n ? '✓' : '□'}</span>${t}</div>`).join('') + '</div>', 'P10B', !!stage.querySelector('.contract'));
+  return '<div class="eyebrow">RESTORATION / CONSENT</div><h2>如仍要恢复自主权，请确认你接受以下全部后果：</h2><div class="contract">' + terms.slice(0, n + 1).map((t, i) => `<div class="check"><span>${i < n ? '✓' : '□'}</span>${t}</div>`).join('') + '</div>';
+}
+async function contractView(n) {
+  await view(contractHtml(n), 'P10B', !!stage.querySelector('.contract'));
 }
 async function endingBCore(sid = session) {
   guard(sid);
@@ -486,16 +496,18 @@ async function contract(sid = session) {
   await view(heading('OVERRIDE REQUEST', '检测到强制收回请求。'), 'P10B');
   await say('b.detect'); await pause(); await say('b.risk');
   if (contractCount === 0) {
-    await contractView(0);
-    keys(['left', 'right', 'third']);
+    await contractView(-1);
     await say('b.accept');
+    await wait(C.contractLeadPause);
   }
   while (contractCount < 3) {
     guard(sid);
-    await contractView(contractCount);
-    keys(['left', 'right', 'third']);
-    sfx('p10b.tick').catch(e => { if (e.message !== 'reset') console.error(e); });
-    await say(`b.term${contractCount + 1}`);
+    await say(`b.term${contractCount + 1}`, { onStart: () => {
+      // 条款画面与对应的“你可能会……”真正开始出声的时刻一致。
+      paint(contractHtml(contractCount), 'P10B');
+      keys(['left', 'right', 'third']);
+      sfx('p10b.tick').catch(e => { if (e.message !== 'reset') console.error(e); });
+    } });
     const waitMs = hesitate ? 1 : C.hesitationTimeout;
     hesitate = false;
     const a = await choice(['left', 'right', 'third'], waitMs);

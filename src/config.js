@@ -8,6 +8,7 @@ window.GAME_CONFIG = {
   questionPrompt: 10000, questionTimeout: 15000,
   finalPrompt: 30000, finalTimeout: 90000,
   rejectionTimeout: 15000, hesitationTimeout: 5000, hesitationAnswerTimeout: 15000,
+  contractLeadPause: 1500,
   resetTimeout: 30000, mediaLoadTimeout: 10000, mediaStallTimeout: 15000,
   guidanceEnter: 2400, guidanceClose: 2400, guidanceLock: 10000, guidanceLockFade: 2400,
   sceneFade: 280,
