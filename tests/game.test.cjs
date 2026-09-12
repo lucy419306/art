@@ -6,6 +6,7 @@ const fs = require('node:fs');
 function harness(audioFiles = {}) {
   let now = 0, serial = 0, keyboard;
   const timers = new Map(), elements = new Map(), audios = [], errors = [];
+  const fullScreen = [];
   const schedule = (f, ms) => { timers.set(++serial, { f, at: now + ms }); return serial; };
   function el() {
     return {
@@ -46,11 +47,12 @@ function harness(audioFiles = {}) {
     document: doc, AbortController, Audio: FakeAudio,
     console: { error: (...args) => errors.push(args) },
     localAssets: { list: async () => Object.keys(audioFiles) },
+    windowControls: { setFullScreen: on => fullScreen.push(on) },
     setTimeout: schedule, clearTimeout: id => timers.delete(id)
   };
   ctx.window = ctx; ctx.addEventListener = (_, f) => { keyboard = f; };
   vm.createContext(ctx);
-  for (const f of ['config.js', 'dialogue.js', 'rules.js', 'media.js', 'beats.js', 'keys.js', 'game.js']) vm.runInContext(fs.readFileSync('src/' + f, 'utf8'), ctx);
+  for (const f of ['config.js', 'dialogue.js', 'voice-cues.js', 'rules.js', 'media.js', 'beats.js', 'keys.js', 'game.js']) vm.runInContext(fs.readFileSync('src/' + f, 'utf8'), ctx);
   async function flush() { for (let i = 0; i < 25; i++) await Promise.resolve(); }
   async function step() {
     await flush();
@@ -58,13 +60,14 @@ function harness(audioFiles = {}) {
     assert.ok(next, 'expected timer'); timers.delete(next[0]); now = next[1].at; next[1].f(); await flush();
   }
   return {
-    ctx, audios, errors, elements, flush, step,
+    ctx, audios, errors, elements, fullScreen, flush, step,
     async key(code, repeat = false) { await flush(); keyboard({ code, repeat, preventDefault() {} }); await flush(); },
     async until(pred) { for (let i = 0; i < 2000; i++) { await flush(); if (pred(ctx.gameStatus())) return; await step(); } throw Error('condition not reached'); },
     get now() { return now; }
   };
 }
-const voice = id => `../assets/voice/evaluation/${id}.mp3`;
+const voiceCues = require('../src/voice-cues.js');
+const voice = id => voiceCues[id].file;
 const reach = (h, phase) => h.until(s => s.phase === phase && s.waiting);
 async function questions(h, choices) {
   await h.key('ArrowLeft');
@@ -97,6 +100,7 @@ test('P7 detect page uses four pause beats and no glitch config', () => {
   const h = harness();
   assert.equal(h.ctx.GAME_CONFIG.p7BlankBeats, 4);
   assert.equal(h.ctx.GAME_CONFIG.p7Glitch, undefined);
+  assert.equal(h.ctx.GAME_CONFIG.luckPause, 1200);
 });
 test('all eight combinations: only all-white answers pass', () => {
   const { passes } = require('../src/rules.js');
@@ -126,6 +130,16 @@ test('C: certificate auto-accepts after 15s if no key', async () => {
   await h.until(s => s.certificateState === 'signing');
   assert.equal(h.now - t, 15000);
   await h.until(s => s.ending === 'C');
+});
+test('C: final good-luck line follows the preceding voice after a 1.2-second gap', async () => {
+  const h = harness({ [voice('c.yours')]: 1000 });
+  await questions(h, ['ArrowLeft', 'ArrowLeft', 'ArrowLeft']);
+  await reach(h, 'P9C'); await h.key('ArrowRight');
+  await h.until(s => s.certificateState === 'awaiting'); await h.key('Space');
+  await h.until(s => s.cueId === 'c.yours');
+  const t = h.now;
+  await h.until(s => s.cueId === 'c.luck');
+  assert.equal(h.now - t, 1000 + h.ctx.GAME_CONFIG.luckPause);
 });
 test('A2: white final choice abandons, no certificate', async () => {
   const h = harness(); await questions(h, ['ArrowLeft', 'ArrowLeft', 'ArrowLeft']);
@@ -181,20 +195,27 @@ test('A3: hesitation unanswered for 15 seconds terminates', async () => {
   const h = harness(); await toContract(h); await reach(h, 'P10B'); await h.step(); await reach(h, 'P10B');
   const t = h.now; await h.step(); assert.equal(h.now - t, 15000); await h.until(s => s.ending === 'A3');
 });
-test('standby accepts any of three keys; held keys cannot start; F1 cancels opening', async () => {
+test('standby accepts any of three keys; held keys cannot start; 1 cancels opening', async () => {
   const h = harness();
   await h.key('ArrowLeft', true); assert.equal(h.ctx.gameStatus().phase, 'P0');
   assert.match(h.elements.get('#keys').innerHTML, /白键/);
   assert.match(h.elements.get('#keys').innerHTML, /黄键/);
   assert.match(h.elements.get('#keys').innerHTML, /红键/);
   await h.key('Space'); assert.equal(h.ctx.gameStatus().phase, 'P1');
-  await h.key('F1'); assert.equal(h.ctx.gameStatus().phase, 'P0');
+  await h.key('F1'); assert.equal(h.ctx.gameStatus().phase, 'P1');
+  await h.key('Digit1'); assert.equal(h.ctx.gameStatus().phase, 'P0');
   await h.key('ArrowLeft'); await h.key('ArrowRight'); assert.equal(h.ctx.gameStatus().phase, 'P1');
-  await h.key('F1'); assert.equal(h.ctx.gameStatus().phase, 'P0');
+  await h.key('Numpad1'); assert.equal(h.ctx.gameStatus().phase, 'P0');
   await h.key('ArrowLeft'); await reach(h, 'P5'); assert.equal(h.ctx.gameStatus().answers.length, 0);
   assert.match(h.elements.get('#keys').innerHTML, /白键/);
   assert.match(h.elements.get('#keys').innerHTML, /黄键/);
   assert.doesNotMatch(h.elements.get('#keys').innerHTML, /红键/);
+});
+test('9 enters fullscreen and 0 exits; held keys do not retrigger either action', async () => {
+  const h = harness();
+  await h.key('Digit9'); await h.key('Digit9', true); await h.key('Digit0');
+  await h.key('Numpad9'); await h.key('Numpad0');
+  assert.deepEqual(h.fullScreen, [true, false, true, false]);
 });
 test('P1 adds 2 seconds after narration; P2 absent MP3 cards each last 3 seconds', async () => {
   const h = harness(); await h.key('ArrowLeft'); await h.until(s => s.cueId === 'p1.detect');
@@ -204,6 +225,18 @@ test('P1 adds 2 seconds after narration; P2 absent MP3 cards each last 3 seconds
     const start = h.now; await h.until(s => s.cueId === (i === 7 ? 'p2.welcome' : `p2.card${i + 1}`));
     assert.equal(h.now - start, 3000 + (i === 7 ? 1000 : fade));
   }
+});
+test('P3 perfect and P4 no-standard-answer each hold 1.2 seconds before the next page', async () => {
+  const h = harness({ [voice('p3.perfect')]: 1000, [voice('p4.record')]: 800 });
+  await h.key('ArrowLeft');
+  await h.until(s => s.cueId === 'p3.perfect');
+  let t = h.now;
+  await h.until(s => s.phase === 'P4');
+  assert.equal(h.now - t, 1000 + h.ctx.GAME_CONFIG.pageTransitionPause);
+  await h.until(s => s.cueId === 'p4.record');
+  t = h.now;
+  await h.until(s => s.phase === 'P5');
+  assert.equal(h.now - t, 800 + h.ctx.GAME_CONFIG.pageTransitionPause);
 });
 test('long MP3 replaces fallback; question countdown starts after voice ends', async () => {
   const h = harness({ [voice('P5.choose')]: 19000 });
@@ -216,12 +249,48 @@ test('short MP3 also replaces fallback instead of imposing a three-second minimu
   await h.until(s => s.cueId === 'p2.card1'); const t = h.now;
   await h.until(s => s.cueId === 'p2.card2'); assert.equal(h.now - t, 500 + h.ctx.GAME_CONFIG.sceneFade);
 });
-test('contract five-second timer starts after first term MP3; accept prompt is not spoken', async () => {
+test('contract accept prompt plays once; five-second timer starts after first term MP3', async () => {
   const h = harness({ [voice('b.term1')]: 11000, [voice('b.accept')]: 1000 }); await toContract(h);
   await h.until(s => s.cueId === 'b.term1'); const t = h.now;
   await reach(h, 'P10B'); assert.equal(h.now - t, 11000); await h.step(); assert.equal(h.now - t, 16000);
   await reach(h, 'P10B'); await h.key('ArrowRight'); await reach(h, 'P10B');
-  assert.equal(h.audios.filter(a => a.path === voice('b.accept')).length, 0);
+  assert.equal(h.audios.filter(a => a.path === voice('b.accept')).length, 1);
+});
+test('voice starts subtitle reveal and finishes it 0-2 seconds before audio ends', async () => {
+  const duration = 5232;
+  const h = harness({ [voice('P5.choose')]: duration });
+  await h.key('ArrowLeft'); await h.until(s => s.cueId === 'P5.choose'); await h.step();
+  const html = h.elements.get('#subtitle').innerHTML;
+  const delays = [...html.matchAll(/animation-delay:([\d.]+)ms/g)].map(match => Number(match[1]));
+  assert.ok(delays.length > 1);
+  const finishAt = Math.max(...delays) + h.ctx.GAME_CONFIG.charRevealMs;
+  assert.ok(finishAt <= duration);
+  assert.ok(finishAt >= duration - 2000);
+});
+test('a pending recording still shows its extraction-table subtitle through the reserved cue', async () => {
+  const h = harness();
+  await h.key('ArrowLeft'); await reach(h, 'P5'); await h.key('ArrowLeft');
+  await reach(h, 'P6'); await h.key('ArrowLeft');
+  await h.until(s => s.cueId === 'P6.left');
+  const subtitle = h.elements.get('#subtitle').innerHTML.replace(/<[^>]+>/g, '');
+  assert.equal(subtitle, '该匹配由系统预先安排。');
+  assert.equal(h.audios.some(audio => audio.path === voice('P6.left')), false);
+});
+test('developer speed changes timers but never changes voice, sfx, or background playback rate', async () => {
+  const h = harness({ [voice('P5.choose')]: 8000, '../assets/bgm/evaluation.mp3': 60000 });
+  await h.key('ArrowLeft'); await h.until(s => s.cueId === 'P5.choose'); await h.step();
+  h.ctx.setDevSpeed(4);
+  assert.ok(h.audios.length > 0);
+  assert.ok(h.audios.every(audio => audio.playbackRate === 1));
+});
+test('voice manifest has no unexpected missing required cues', () => {
+  const missing = Object.entries(voiceCues)
+    .filter(([, cue]) => cue.required)
+    .filter(([, cue]) => !fs.existsSync(require('node:path').resolve(__dirname, '../src', cue.file)))
+    .map(([id]) => id)
+    .sort();
+  const pending = new Set(['P6.left', 'b.pain', 'c.pain']);
+  assert.ok(missing.every(id => pending.has(id)), `unexpected missing cues: ${missing.join(', ')}`);
 });
 test('long reminder finishes before automatic choice; manual choice interrupts it immediately', async () => {
   for (const manual of [false, true]) {
@@ -238,13 +307,13 @@ test('invalid and stalled MP3 recover to fallback instead of hanging', async () 
     await h.until(s => s.cueId === 'p2.card1'); assert.deepEqual(h.errors, []);
   }
 });
-test('F1 stops long narration, reminder and background; certificate reset leaves no old continuation', async () => {
+test('1 stops long narration, reminder and background; certificate reset leaves no old continuation', async () => {
   const h = harness({ [voice('P5.choose')]: 20000, '../assets/bgm/evaluation.mp3': 60000 });
-  await h.key('ArrowLeft'); await h.until(s => s.cueId === 'P5.choose'); await h.key('F1');
+  await h.key('ArrowLeft'); await h.until(s => s.cueId === 'P5.choose'); await h.key('Digit1');
   assert.ok(h.audios.every(a => a.paused)); assert.equal(h.ctx.gameStatus().phase, 'P0');
   const c = harness(); await questions(c, ['ArrowLeft', 'ArrowLeft', 'ArrowLeft']);
   await reach(c, 'P9C'); await c.key('ArrowRight'); await c.until(s => s.certificateState === 'awaiting' || s.certificateState === 'signing');
-  await c.key('F1'); await c.key('ArrowLeft'); await reach(c, 'P5');
+  await c.key('Digit1'); await c.key('ArrowLeft'); await reach(c, 'P5');
   assert.equal(c.ctx.gameStatus().certificateState, null); assert.equal(c.ctx.gameStatus().answers.length, 0);
 });
 test('P0 standby loops across P1 and stops upon reaching P2; P1 start sfx plays', async () => {
@@ -420,12 +489,15 @@ test('P4 to P7 audio transitions: ending+intro crossfade, cues, pain memory solo
     [voice('p4.simulations')]: 100,
     [voice('p4.record')]: 100
   };
-  for (let i = 1; i <= 7; i++) audioFiles[voice(`p2.card${i}`)] = 100;
+  for (let i = 1; i <= 7; i++) {
+    const key = `p2.card${i}`;
+    if (voiceCues[key]) audioFiles[voice(key)] = 100;
+  }
   for (const id of ['P5', 'P6', 'P7']) {
-    audioFiles[voice(`${id}.intro`)] = 100;
-    audioFiles[voice(`${id}.choose`)] = 100;
-    audioFiles[voice(`${id}.record`)] = 100;
-    audioFiles[voice(`${id}.left`)] = 100;
+    for (const action of ['intro', 'choose', 'record', 'left', 'right']) {
+      const key = `${id}.${action}`;
+      if (voiceCues[key]) audioFiles[voice(key)] = 100;
+    }
   }
 
   const h = harness(audioFiles);

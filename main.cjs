@@ -1,20 +1,23 @@
-const {app,BrowserWindow,Menu,ipcMain}=require('electron');
-const path=require('node:path');
-const fs=require('node:fs/promises');
+const { app, BrowserWindow, Menu, ipcMain } = require('electron');
+const path = require('node:path');
+const fs = require('node:fs/promises');
+
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+
 ipcMain.handle('assets:list', async () => {
- const result=[];
- async function walk(relative) {
-  const entries=await fs.readdir(path.join(__dirname,relative),{withFileTypes:true});
-  for(const entry of entries) {
-   const child=relative+'/'+entry.name;
-   if(entry.isDirectory()) await walk(child);
-   else if(entry.isFile() && /\.(mp3|mp4)$/i.test(entry.name)) result.push('../'+child);
+  const result = [];
+  async function walk(relative) {
+    const entries = await fs.readdir(path.join(__dirname, relative), { withFileTypes: true });
+    for (const entry of entries) {
+      const child = relative + '/' + entry.name;
+      if (entry.isDirectory()) await walk(child);
+      else if (entry.isFile() && /\.(mp3|mp4)$/i.test(entry.name)) result.push('../' + child);
+    }
   }
- }
- await walk('assets');
- return result;
+  await walk('assets');
+  return result;
 });
+
 ipcMain.handle('assets:read', async (_, relative) => {
   try {
     const cleanRel = String(relative || '').replace(/^\.\.\//, '');
@@ -24,13 +27,19 @@ ipcMain.handle('assets:read', async (_, relative) => {
     return null;
   }
 });
+
+ipcMain.on('window:fullscreen-request', (event, on) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win && !win.isDestroyed()) win.setFullScreen(!!on);
+});
+
 const dev = process.argv.includes('--dev');
 const both = process.argv.includes('--both');
 
 function createWindow(isDev, x, y) {
   const options = {
-    width: 1300,
-    height: 820,
+    width: 1440,
+    height: 900,
     minWidth: 900,
     minHeight: 650,
     backgroundColor: '#070a0d',
@@ -49,7 +58,16 @@ function createWindow(isDev, x, y) {
   const win = new BrowserWindow(options);
   Menu.setApplicationMenu(Menu.buildFromTemplate([
     { label: app.name, submenu: [{ role: 'quit' }] },
-    { label: '显示', submenu: [{ role: 'togglefullscreen', accelerator: 'F11' }, { role: 'reload' }, { role: 'toggleDevTools' }] }
+    {
+      label: '显示',
+      submenu: [
+        { label: '进入全屏', click: () => win.setFullScreen(true) },
+        { label: '退出全屏', click: () => win.setFullScreen(false) },
+        { role: 'togglefullscreen', accelerator: 'F11' },
+        { role: 'reload' },
+        { role: 'toggleDevTools' }
+      ]
+    }
   ]));
   win.loadFile(path.join(__dirname, 'src/index.html'), isDev ? { query: { dev: '1' } } : {});
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
@@ -68,6 +86,7 @@ app.whenReady().then(() => {
     if (!BrowserWindow.getAllWindows().length) createWindow(dev);
   });
 });
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });

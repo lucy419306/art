@@ -1,6 +1,9 @@
 // 毫秒。具体批注优先；没有标时的对白至少显示 3 秒，长句确保逐字显示完毕。
 window.GAME_CONFIG = {
-  speed: 1, typeMs: 48, lineFallback: 3000, pause: 1000, longPause: 5000,
+  speed: 1, typeMs: 48, charRevealMs: 320, voiceLeadRatio: 0.12,
+  voiceLeadMin: 300, voiceLeadMax: 1200,
+  lineFallback: 3000, pause: 1000, longPause: 5000, luckPause: 1200,
+  pageTransitionPause: 1200,
   startupPause: 2000, introDurations: [3000, 3000, 3000, 3000, 3000, 3000, 3000],
   questionPrompt: 10000, questionTimeout: 15000,
   finalPrompt: 30000, finalTimeout: 90000,

@@ -93,17 +93,7 @@ class GameMedia {
       if (job.timer) { clearTimeout(job.timer); job.timer = null; }
       if (!this.paused) this._arm(job);
     }
-    for (const audio of this.playing) audio.playbackRate = this.rate;
-    if (this.background) {
-      if (this.background.audio) this.background.audio.playbackRate = this.rate;
-      if (this.background.audios) {
-        for (const a of this.background.audios) a.playbackRate = this.rate;
-      }
-      if (this.background.webNode?.source) this.background.webNode.source.playbackRate.value = this.rate;
-      if (this.background.webNodes) {
-        for (const wn of this.background.webNodes) wn.source.playbackRate.value = this.rate;
-      }
-    }
+    // 开发者倍速只缩短演出计时。所有音频始终保持原速；快速走查请配合静音。
   }
   pauseClock() {
     if (this.paused) return;
@@ -156,16 +146,19 @@ class GameMedia {
       if (!this.paused) this._arm(job);
     });
   }
-  async play(kind, id, fallback, signal, onDuration, volume) {
+  async play(kind, id, fallback, signal, hooks = {}, volume = 1) {
+    if (typeof hooks === 'number') { volume = hooks; hooks = {}; }
+    const onStart = typeof hooks === 'function' ? hooks : hooks?.onStart;
+    const onFallback = hooks?.onFallback;
     if (signal.aborted) throw new Error('reset');
     const path = this.path(kind, id);
-    if (!path) return this.delay(fallback, signal);
+    if (!path) { onFallback?.(); return this.delay(fallback, signal); }
     const completed = await new Promise((resolve, reject) => {
       const audio = new Audio(path);
-      audio.playbackRate = this.rate;
+      audio.playbackRate = 1;
       if (typeof volume === 'number') audio.volume = volume;
       this.playing.add(audio);
-      let done = false, watchdog;
+      let done = false, watchdog, duration = null, started = false;
       const clean = () => {
         clearTimeout(watchdog); signal.removeEventListener('abort', abort);
         audio.onended = audio.onerror = audio.onloadedmetadata = audio.ontimeupdate = audio.onplaying = null;
@@ -182,17 +175,23 @@ class GameMedia {
       audio.onended = () => finish(true);
       audio.onerror = () => finish(false);
       audio.onloadedmetadata = () => {
-        if (Number.isFinite(audio.duration)) onDuration?.(audio.duration * 1000);
+        if (Number.isFinite(audio.duration)) {
+          duration = audio.duration * 1000;
+          if (typeof hooks === 'function') hooks(duration);
+        }
       };
       let lastTime = -1;
-      audio.onplaying = () => arm(this.config.mediaStallTimeout);
+      audio.onplaying = () => {
+        if (!started) { started = true; onStart?.(duration ?? fallback); }
+        arm(this.config.mediaStallTimeout);
+      };
       audio.ontimeupdate = () => {
         if (audio.currentTime > lastTime) { lastTime = audio.currentTime; arm(this.config.mediaStallTimeout); }
       };
       arm(this.config.mediaLoadTimeout);
       if (!this.paused) audio.play().catch(() => finish(false));
     });
-    if (!completed) await this.delay(fallback, signal);
+    if (!completed) { onFallback?.(); await this.delay(fallback, signal); }
   }
   async getAudioBuffer(path) {
     if (!this.audioCtx) return null;
@@ -267,7 +266,7 @@ class GameMedia {
     const path = this.path('bgm', id) || this.path('sfx', id);
     if (!path || signal.aborted) return;
     const audio = new Audio(path);
-    audio.loop = true; audio.volume = volume; audio.playbackRate = this.rate;
+    audio.loop = true; audio.volume = volume; audio.playbackRate = 1;
 
     let stopped = false;
     let webNode = null;
@@ -300,7 +299,7 @@ class GameMedia {
         source.loop = true;
         source.loopStart = range.loopStart;
         source.loopEnd = range.loopEnd;
-        source.playbackRate.value = this.rate;
+        source.playbackRate.value = 1;
 
         const gainNode = this.audioCtx.createGain();
         gainNode.gain.value = this.paused ? 0 : volume;
@@ -341,7 +340,7 @@ class GameMedia {
       if (!loopPaths.length || signal.aborted || cancelled) return;
       for (const loopPath of loopPaths) {
         const loopAudio = new Audio(loopPath);
-        loopAudio.loop = true; loopAudio.volume = volume; loopAudio.playbackRate = this.rate;
+        loopAudio.loop = true; loopAudio.volume = volume; loopAudio.playbackRate = 1;
         activeAudios.push(loopAudio);
         if (this.background) {
           this.background.audio = activeAudios[0];
@@ -360,7 +359,7 @@ class GameMedia {
             source.loop = true;
             source.loopStart = range.loopStart;
             source.loopEnd = range.loopEnd;
-            source.playbackRate.value = this.rate;
+            source.playbackRate.value = 1;
 
             const gainNode = this.audioCtx.createGain();
             gainNode.gain.value = this.paused ? 0 : volume;
@@ -380,7 +379,7 @@ class GameMedia {
 
     if (introPath) {
       introAudio = new Audio(introPath);
-      introAudio.volume = volume; introAudio.playbackRate = this.rate;
+      introAudio.volume = volume; introAudio.playbackRate = 1;
       introAudio.onended = () => {
         if (!signal.aborted && !cancelled) startLoop();
       };
@@ -397,4 +396,4 @@ class GameMedia {
     }
   }
 }
-window.GameMedia = GameMedia;
+if (typeof module !== 'undefined') module.exports = GameMedia;

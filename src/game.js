@@ -16,8 +16,17 @@ const wait = (ms, signal = run.signal) => media.delay(ms, signal);
 const pause = () => wait(C.pause);
 const fallbackFor = text => Math.max(C.lineFallback, text.length * C.typeMs + 1200);
 
-function type(el, text, step = C.typeMs * C.speed) {
-  el.innerHTML = [...text].map((c, i) => `<span class="char" style="animation-delay:${i * step}ms">${esc(c)}</span>`).join('');
+function type(el, text, step = C.typeMs * C.speed, reveal = C.charRevealMs || 320) {
+  el.innerHTML = [...text].map((c, i) => `<span class="char" style="animation-delay:${i * step}ms;animation-duration:${reveal}ms">${esc(c)}</span>`).join('');
+}
+function voiceType(el, text, duration) {
+  const count = [...text].length;
+  const reveal = Math.min(C.charRevealMs || 320, Math.max(40, duration * 0.45));
+  const desiredLead = Math.min(C.voiceLeadMax || 1200, Math.max(C.voiceLeadMin || 300, duration * (C.voiceLeadRatio || 0.12)));
+  const lead = Math.min(Math.max(0, duration - reveal), desiredLead);
+  const finishAt = duration - lead;
+  const step = count > 1 ? Math.max(0, (finishAt - reveal) / (count - 1)) : 0;
+  type(el, text, step, reveal);
 }
 function paint(html, id = phase) {
   phase = id;
@@ -63,14 +72,19 @@ function cards(title, white, yellow) {
     `<div class="card ${i ? 'warm' : ''}"><label>${i ? '黄' : '白'}键</label><h2>${card[0]}</h2>${card.slice(1).map(t => `<p>${t}</p>`).join('')}</div>`).join('')}</div><p class="prompt">请选择</p>`;
 }
 async function say(id, { el = sub, fallback, signal = run.signal } = {}) {
-  const text = GAME_DIALOGUE[id];
-  if (text === undefined) throw new Error(`缺少台词：${id}`);
+  const dialogue = GAME_DIALOGUE[id];
+  if (dialogue === undefined) throw new Error(`缺少台词：${id}`);
+  const cue = window.GAME_VOICE_CUES?.[id];
+  const text = cue?.transcript ?? dialogue;
   cueId = id;
-  type(el, text);
-  if (devMuted) { await media.delay(fallback ?? fallbackFor(text), signal); return; }
-  await media.play('voice', id, fallback ?? fallbackFor(text), signal, duration => {
-    // 短音轨时同步加快文字显现，避免音轨结束时仍有字未出现。
-    type(el, text, Math.min(C.typeMs * C.speed, Math.max(0, duration - 350) / Math.max(1, text.length)));
+  const fallbackMs = fallback ?? fallbackFor(text);
+  if (devMuted) { type(el, text); await media.delay(fallbackMs, signal); return; }
+  let shown = false;
+  const showFallback = () => { if (!shown) { shown = true; type(el, text); } };
+  await media.play('voice', id, fallbackMs, signal, {
+    // 以真正开始出声的 playing 事件为共同起点，避免加载延迟造成声画错位。
+    onStart: duration => { if (!shown) { shown = true; voiceType(el, text, duration); } },
+    onFallback: showFallback
   });
 }
 const sfx = (id, fallback = 0, volume) => devMuted ? Promise.resolve() : media.play('sfx', id, fallback, run.signal, null, volume);
@@ -164,7 +178,7 @@ async function sceneP4(sid) {
   if (!devMuted) {
     media.playChain({ intro: 'p4_6.intro', loop: ['p4_6.loop', 'p4_6.asmr.loop'], volume: 0.25 }, run.signal);
   }
-  await wait(1800);
+  await wait(C.pageTransitionPause ?? 1200);
   guard(sid);
 }
 async function sceneP8(sid) {
@@ -207,6 +221,7 @@ async function history() {
     await Promise.all([audioPromise, wait(Math.max(650, text.length * C.typeMs))]);
   }
   await say('p3.count'); await pause(); await say('p3.perfect');
+  await wait(C.pageTransitionPause);
   document.body.classList.remove('history');
 }
 
@@ -260,10 +275,10 @@ async function question(i) {
 async function result(id = phase) {
   await view(heading('AUTONOMY RESTORED', '自主权已恢复') + '<p class="result">未来结果：无法预测</p>', id);
 }
-async function costs(prefix, gaps = true) {
+async function costs(prefix, gaps = true, tailPause = C.longPause) {
   await say(prefix + '.errors'); if (gaps) await pause();
   await say(prefix + '.pain'); if (gaps) await pause();
-  await say(prefix + '.optimal'); await wait(C.longPause);
+  await say(prefix + '.optimal'); await wait(tailPause);
 }
 async function passed(sid = session) {
   guard(sid);
@@ -297,7 +312,9 @@ async function certificate(sid = session, endingId = 'C') {
     <div id="final-seal"></div>
   </article>`, endingId, true);
   const cert = document.querySelector('.certificate');
-  const voices = (async () => { await say('c.final'); await pause(); await say('c.handover'); })();
+  const voices = endingId === 'C'
+    ? (async () => { await say('c.final'); await pause(); await say('c.handover'); })()
+    : Promise.resolve();
   await wait(280);
   cert?.classList.add('unfold');
   await wait(C.certificate.expand);
@@ -357,8 +374,10 @@ async function certificate(sid = session, endingId = 'C') {
   document.querySelector('#certificate-status').textContent = endingId === 'B' ? '收回完成' : '交接完成';
   certificateState = 'complete';
   await sfx('stamp');
-  await say('c.complete'); await pause(); await say('c.yours');
-  await wait(C.longPause); await say('c.luck'); await pause();
+  if (endingId === 'C') {
+    await say('c.complete'); await pause(); await say('c.yours');
+    await wait(C.luckPause); await say('c.luck'); await pause();
+  }
   sub.textContent = '';
   stage.insertAdjacentHTML('beforeend', '<p class="certificate-future"><i></i><span>未来结果：无法预测</span><i></i></p>');
   await finish(endingId, sid);
@@ -394,7 +413,8 @@ async function endingBCore(sid = session) {
   await wait(3000);
   guard(sid);
   document.body.classList.remove('minimal'); background('evaluation');
-  await result('B'); await say('b.confirm'); await pause(); await costs('b', false);
+  await result('B'); await say('b.confirm'); await pause(); await costs('b', false, C.luckPause);
+  await say('b.luck'); await pause();
   return certificate(sid, 'B');
 }
 async function contract(sid = session) {
@@ -402,6 +422,11 @@ async function contract(sid = session) {
   if (contractCount >= 3) return endingBCore(sid);
   await view(heading('OVERRIDE REQUEST', '检测到强制收回请求。'), 'P10B');
   await say('b.detect'); await pause(); await say('b.risk');
+  if (contractCount === 0) {
+    await contractView(0);
+    keys(['left', 'right', 'third']);
+    await say('b.accept');
+  }
   while (contractCount < 3) {
     guard(sid);
     await contractView(contractCount);
@@ -488,7 +513,7 @@ async function finish(id, sid = session) {
   stage.classList.remove('stage-leave');
 }
 function launch(fn) {
-  fn().catch(e => { if (e.message !== 'reset') { console.error(e); sub.textContent = '运行异常，请按 F1 复位。'; } });
+  fn().catch(e => { if (e.message !== 'reset') { console.error(e); sub.textContent = '运行异常，请按数字键 1 复位。'; } });
 }
 function stopVideo() {
   const video = document.querySelector('#video'); video.pause(); video.removeAttribute('src'); video.load();
@@ -568,7 +593,10 @@ window.setDevPaused = on => {
 };
 window.addEventListener('keydown', e => {
   if (typeof window.__devKey === 'function' && window.__devKey(e)) return;
-  if (e.code === 'F1') { e.preventDefault(); if (!e.repeat) reset(true); return; }
+  const plain = !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey;
+  if (plain && (e.code === 'Digit1' || e.code === 'Numpad1')) { e.preventDefault(); if (!e.repeat) reset(true); return; }
+  if (plain && (e.code === 'Digit9' || e.code === 'Numpad9')) { e.preventDefault(); if (!e.repeat) window.windowControls?.setFullScreen(true); return; }
+  if (plain && (e.code === 'Digit0' || e.code === 'Numpad0')) { e.preventDefault(); if (!e.repeat) window.windowControls?.setFullScreen(false); return; }
   if (!ready || e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
   const key = GameRules.key(e.code); if (!key) return; e.preventDefault();
   if (phase === 'P0') {
