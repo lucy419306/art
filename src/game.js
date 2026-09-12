@@ -367,9 +367,23 @@ async function endingA(entry, sid = session, skipEntry = false) {
   }
   await say('a.reassure'); await pause(); await say('a.decided');
   document.body.classList.add('closing'); await wait(C.guidanceClose);
-  document.body.classList.remove('guidance', 'closing'); document.body.classList.add('minimal');
-  view('<p class="tiny">人生指导系统：运行中</p>'); await wait(3000);
-  media.stopBackground(); document.body.classList.add('black'); await finish(entry, sid);
+  document.body.classList.remove('guidance', 'closing');
+  document.body.classList.add('minimal', 'guide-lock-on');
+  document.body.style.setProperty('--guidance-lock-fade-ms', `${C.guidanceLockFade * C.speed}ms`);
+  view(`<div class="guide-lock" aria-label="人生指导系统：运行中">
+    <div class="guide-mark" aria-hidden="true">
+      <i class="guide-orbit o1"></i><i class="guide-orbit o2"></i><i class="guide-orbit o3"></i>
+      <i class="guide-ring"></i><i class="guide-core"></i>
+    </div>
+    <p class="guide-name">人生指导系统</p>
+    <p class="guide-status">运行中</p>
+  </div>`, 'P11');
+  await wait(C.guidanceLock);
+  document.body.classList.add('guide-lock-out');
+  media.stopBackground();
+  await wait(C.guidanceLockFade);
+  document.body.classList.add('black');
+  await finish(entry, sid);
 }
 
 async function finish(id, sid = session) {
