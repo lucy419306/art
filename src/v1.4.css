@@ -1,0 +1,78 @@
+/* v1.4：有厚度的颜色键帽、驳回倒计时、证书、温馨日常场景。 */
+#narrative { max-width: 860px; }
+.key { margin: 0 10px; opacity: .22; color: #dce6e8; }
+.key b { width: 38px; height: 31px; border-radius: 5px; border: 1px solid #ffffff70; background: linear-gradient(#e9efef, #aebbc1); color: #273137; box-shadow: 0 4px 0 #55616b, 0 6px 8px #0008, inset 0 1px 0 #fff9; font: 12px 'PingFang SC', sans-serif; }
+.key.yellow b { background: linear-gradient(#ffe4a1, #c89c50); box-shadow: 0 4px 0 #70562b, 0 6px 8px #0008, inset 0 1px 0 #fff9; color: #4a3515; }
+.key.red b { background: linear-gradient(#ee8a80, #b7453d); box-shadow: 0 4px 0 #702c28, 0 6px 8px #0008, inset 0 1px 0 #fff7; color: #401b18; }
+.key.on { opacity: 1; }
+.key.flash { transform: translateY(2px); filter: brightness(1.7); }
+.override-hint { position: absolute; right: 5vw; bottom: 155px; color: #bda2a0; font-size: 12px; letter-spacing: 2px; }
+.countdown-track { height: 2px; margin-top: 17px; background: #67433d45; overflow: hidden; }
+#countdown { height: 100%; background: #d48b80; transform-origin: left; }
+#countdown.running { animation: countdown var(--countdown-ms) linear forwards; }
+@keyframes countdown { to { transform: scaleX(0); } }
+.ceremony header, .ceremony .rail, .ceremony footer { visibility: hidden; }
+.ceremony .frame { padding-top: 12px; padding-bottom: 12px; }
+.ceremony header, .ceremony .rail { height: 0; margin: 0; padding: 0; border: 0; }
+.ceremony footer { height: 0; min-height: 0; border: 0; }
+.ceremony #subtitle { min-height: 56px; font-size: 14px; }
+.ceremony #stage { padding: 12px 0; }
+.ceremony-fade { animation: fadeOut var(--fade-ms) forwards; }
+.certificate-line { width: 120px; height: 1px; background: #e6eef0; box-shadow: 0 0 16px #c3e7ee80; }
+.certificate { width: min(500px, 70vw); height: min(710px, calc(100vh - 130px)); min-height: 480px; position: relative; padding: 32px 35px 68px; background: linear-gradient(150deg, #1d2b2e, #0c1417); color: #dce5df; box-shadow: 0 28px 90px #0008; display: flex; flex-direction: column; justify-content: center; }
+.certificate:before { content: ''; position: absolute; inset: 0; border: 1px solid #a8beb4; pointer-events: none; }
+.certificate:after { content: ''; position: absolute; inset: 9px; border: 1px solid #61796b66; pointer-events: none; }
+.certificate.drawing:before, .certificate.drawing:after { animation: drawCertificate var(--draw-ms) ease-out both; }
+@keyframes drawCertificate { 0% { clip-path: inset(50% 38% 50% 38%); } 45% { clip-path: inset(0 38% 0 38%); } 100% { clip-path: inset(0); } }
+.certificate-section { animation: certificateRow .8s ease-out both; }
+.certificate-section h2 { animation: none; font-size: 24px; line-height: 1.6; letter-spacing: 5px; margin: 12px 0 18px; color: #e7eee7; }
+.cert-institution { font-size: 11px; letter-spacing: 5px; color: #a0b9ab; }
+.certificate p { font-size: 13px; line-height: 1.8; letter-spacing: 1px; margin: 10px 0; color: #b9c9bf; }
+.certificate strong { font-weight: 500; color: #e5eade; }
+.certificate .cert-parties { text-align: left; font-size: 11px; margin-top: 18px; }
+.certificate-signatures { position: absolute; bottom: 25px; left: 35px; right: 35px; display: flex; justify-content: space-between; align-items: center; }
+.certificate-signatures span:not(:empty) { border: 1px solid #b9c6ac80; padding: 9px 7px; color: #c6d4b7; font-size: 10px; letter-spacing: 1px; animation: certificateRow .6s both; }
+#receiver-seal:not(:empty) { transform: rotate(-6deg); }
+.signature-light { position: fixed; width: 2px; height: 45px; background: linear-gradient(transparent, #edffff); box-shadow: 0 0 14px #fff; left: 50%; bottom: 30px; animation: signatureLight var(--light-ms) ease-in-out forwards; }
+@keyframes signatureLight { to { bottom: 17%; left: calc(50% + 160px); opacity: .5; } }
+#final-seal:not(:empty) { position: absolute; top: 40%; left: 50%; margin-left: -61px; width: 122px; height: 122px; border: 3px double #c4d8ad; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: transparent; transform: rotate(-14deg); box-shadow: 0 0 26px #b6d09b20; mix-blend-mode: screen; }
+#final-seal span { font-size: 11px; letter-spacing: 2px; color: #c4d8ad; }
+#final-seal strong { font-size: 24px; margin-top: 6px; letter-spacing: 3px; }
+#final-seal.stamping { animation: sealDrop var(--stamp-ms) ease-in both; }
+@keyframes sealDrop { from { opacity: 0; transform: translateY(-95px) scale(1.6) rotate(-14deg); filter: blur(3px); } to { opacity: 1; transform: translateY(0) scale(1) rotate(-14deg); filter: blur(0); } }
+.certificate.sealed { animation: borderLight 1.8s ease-out both; }
+@keyframes borderLight { from { box-shadow: 0 0 50px #dceecb70, inset 0 0 20px #dceecb40; } to { box-shadow: 0 28px 90px #0008; } }
+.certificate-future { font-size: 10px; letter-spacing: 4px; margin: 12px 0 0; color: #879f94; }
+@keyframes certificateRow { from { opacity: 0; transform: translateY(7px); clip-path: inset(0 0 100% 0); } to { opacity: 1; transform: translateY(0); clip-path: inset(0); } }
+.home-scene { display: none; }
+.guidance { background: #f4e7cf; color: #524832; }
+.guidance:before { background: linear-gradient(115deg, #fff4d9e6 20%, #f6ead8aa 70%, #f6ead877); z-index: 1; }
+.guidance .grain { opacity: .04; z-index: 2; }
+.guidance .frame { z-index: 3; }
+.guidance .home-scene { display: block; position: fixed; inset: 0; overflow: hidden; background: linear-gradient(135deg, #fff1c9, #d5ddc1 60%, #e6c8a4); }
+.home-window { position: absolute; right: 3%; top: 8%; width: 38%; height: 70%; border: 20px solid #fff9e4; box-shadow: 0 14px 60px #8c785344; background: linear-gradient(#bad9d4, #fff0ba); }
+.home-window:before { content: ''; position: absolute; left: 48%; height: 100%; width: 9px; background: #fff9e4; }
+.home-window:after { content: ''; position: absolute; top: 50%; width: 100%; height: 9px; background: #fff9e4; }
+.home-sun { position: absolute; top: 17%; right: 12%; width: 100px; height: 100px; background: #fff9cb; border-radius: 50%; box-shadow: 0 0 110px 45px #fff3b7; }
+.home-curtain { position: absolute; right: 0; top: 0; width: 10%; height: 100%; background: repeating-linear-gradient(90deg, #f4ead78c, #d1bca48c 24px, #fff4dfc0 48px); z-index: 1; }
+.home-hill { position: absolute; right: 9%; top: 57%; width: 30%; height: 28%; border-radius: 90% 90% 0 0; background: #94a878; }
+.home-table { position: absolute; bottom: 0; right: 0; width: 43%; height: 15%; background: linear-gradient(#b8986b, #e6c99d); transform: skewY(-6deg); }
+.home-vase { position: absolute; bottom: 14%; right: 18%; width: 62px; height: 110px; border-radius: 10px 10px 35px 35px; background: #ead5b5; box-shadow: inset -15px 0 20px #9e886844; }
+.home-vase:before { content: ''; position: absolute; width: 95px; height: 130px; bottom: 85px; left: -25px; background: #81916a; border-radius: 0 90% 0 90%; transform: rotate(-15deg); }
+.guidance h1 { color: #665435; }
+.guidance p, .guidance #subtitle { color: #6b604b; }
+.guidance .eyebrow, .guidance header, .guidance .rail { color: #978462; }
+.guidance header, .guidance footer { border-color: #ac977b50; }
+.guidance .timeline { background: #fffaf0aa; border: 1px solid #e2cfaf; border-radius: 12px; padding: 0 28px; box-shadow: 0 20px 70px #a0825130; }
+.guidance .timeline p { border-color: #d9c6a6; }
+.guidance .timeline p:first-child { border-top: 0; }
+.closing .frame, .closing .home-scene, .closing:before { animation: fadeOut 3s forwards; }
+@media (max-height: 780px) {
+  .certificate { padding: 18px 28px 55px; min-height: 460px; }
+  .certificate p { font-size: 11px; line-height: 1.6; margin: 7px 0; }
+  .certificate-section h2 { font-size: 20px; margin: 8px 0 12px; }
+  .certificate .cert-parties { margin-top: 8px; font-size: 10px; }
+  .certificate-signatures { bottom: 17px; }
+  #final-seal:not(:empty) { width: 98px; height: 98px; margin-left: -49px; }
+  #final-seal strong { font-size: 20px; }
+}
