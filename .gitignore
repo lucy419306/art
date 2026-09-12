@@ -1,0 +1,22 @@
+# 可再生成 / 构建产物（构建包走 GitHub Releases，不入库）
+node_modules/
+dist/
+
+# 系统与解压垃圾
+__MACOSX/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 日志与缓存
+*.log
+npm-debug.log*
+__pycache__/
+*.pyc
+*.tmp
+
+# 环境与密钥
+.env
+.env.*
+*.pem
+*.key
