@@ -202,7 +202,7 @@ test('P1 adds 2 seconds after narration; P2 absent MP3 cards each last 3 seconds
   const t = h.now; await h.until(s => s.cueId === 'p2.card1'); assert.equal(h.now - t, 5000 + fade);
   for (let i = 1; i <= 7; i++) {
     const start = h.now; await h.until(s => s.cueId === (i === 7 ? 'p2.welcome' : `p2.card${i + 1}`));
-    assert.equal(h.now - start, 3000 + (i === 7 ? 0 : fade));
+    assert.equal(h.now - start, 3000 + (i === 7 ? 1000 : fade));
   }
 });
 test('long MP3 replaces fallback; question countdown starts after voice ends', async () => {
@@ -276,4 +276,207 @@ test('P0 standby loops across P1 and stops upon reaching P2; P1 start sfx plays'
   // 等待直到进入 P2，待机持续音必须停止
   await h.until(s => s.cueId === 'p2.card1');
   assert.equal(standbyAudio.paused, true, 'standby audio must stop once P2 starts');
+});
+
+test('P2 audio chain: intro -> loop, 7 card beeps, ending & P2-3 intro paired before welcome, loading 1.25s later', async () => {
+  const p2Intro = '../assets/sfx/P2 背景声intro.mp3';
+  const p2Loop = '../assets/sfx/P2 背景声loop.mp3';
+  const p2Ending = '../assets/sfx/P2 背景声ending.mp3';
+  const p3_4Intro = '../assets/sfx/P3-4 用户你好背景声intro.mp3';
+  const p3_4Loop = '../assets/sfx/P3-4 背景声loop.mp3';
+  const p3Loading = '../assets/sfx/P3-4 Loading.mp3';
+  const beepPath = '../assets/sfx/P2 七张档案卡.mp3';
+
+  const audioFiles = {
+    ['../assets/sfx/P1启动.mp3']: 500,
+    [voice('p1.detect')]: 100,
+    [p2Intro]: 2000,
+    [p2Loop]: 10000,
+    [p2Ending]: 4320,
+    [p3_4Intro]: 4320,
+    [p3_4Loop]: 15000,
+    [p3Loading]: 8060,
+    [beepPath]: 2090
+  };
+  for (let i = 1; i <= 7; i++) audioFiles[voice(`p2.card${i}`)] = 500;
+  audioFiles[voice('p2.welcome')] = 6000;
+
+  const h = harness(audioFiles);
+  // P0 启动不应触发 beep
+  await h.key('ArrowLeft');
+  assert.equal(h.audios.filter(a => a.path === beepPath).length, 0, 'P0 start should not trigger beep');
+
+  // 进入 P2：开始播放 P2 intro
+  await h.until(s => s.cueId === 'p2.card1');
+  const introAudio = h.audios.find(a => a.path === p2Intro);
+  assert.ok(introAudio, 'P2 intro audio should be created');
+  assert.equal(introAudio.paused, false, 'P2 intro audio should play at P2 start');
+
+  // P2 intro 播完（2000ms 后），应无缝切入 P2 loop
+  await h.until(() => h.audios.some(a => a.path === p2Loop && !a.paused));
+  const loopAudio = h.audios.find(a => a.path === p2Loop);
+  assert.ok(loopAudio, 'P2 loop audio should be started after intro ends');
+  assert.equal(loopAudio.loop, true, 'P2 loop audio should have loop=true');
+
+  // 7 张卡切卡时各触发一次 beep
+  await h.until(s => s.cueId === 'p2.card7');
+  const beepsAtCard7 = h.audios.filter(a => a.path === beepPath).length;
+  assert.equal(beepsAtCard7, 7, 'Each of the 7 archive cards should trigger a beep');
+
+  // 底下小字 p2.welcome 出现前 1 秒：loop 停止，ending 与 P3-4 intro 同步触发
+  await h.until(s => s.cueId === 'p2.welcome');
+  assert.equal(loopAudio.paused, true, 'P2 loop must be stopped before welcome text');
+  const endingAudio = h.audios.find(a => a.path === p2Ending);
+  const p3_4Audio = h.audios.find(a => a.path === p3_4Intro);
+  assert.ok(endingAudio && !endingAudio.paused, 'P2 ending audio should play before welcome');
+  assert.ok(p3_4Audio && !p3_4Audio.paused, 'P3-4 intro audio should play concurrently with ending');
+
+  // P3-4 intro (4.32s) 播完后，P3-4 loop 自动切入播放
+  await h.until(() => h.audios.some(a => a.path === p3_4Loop && !a.paused));
+  const p3_4LoopAudio = h.audios.find(a => a.path === p3_4Loop);
+  assert.ok(p3_4LoopAudio && !p3_4LoopAudio.paused, 'P3-4 loop must play after P3-4 intro ends');
+
+  // 台词 p2.welcome 念完“测试阶段”后，触发 P3-4 Loading 音效，此时底下的 P3-4 loop 正在播放
+  await h.until(() => h.audios.some(a => a.path === p3Loading));
+  const loadingAudio = h.audios.find(a => a.path === p3Loading);
+  assert.ok(loadingAudio && !loadingAudio.paused, 'P3-4 loading sfx should play after welcome finishes');
+  assert.equal(p3_4LoopAudio.paused, false, 'P3-4 loop is playing concurrently with Loading');
+});
+
+test('P3 history typing: first 7 lines silent, 8th line triggers beep; valid button press triggers beep', async () => {
+  const beepPath = '../assets/sfx/P2 七张档案卡.mp3';
+  const p3_4Loop = '../assets/sfx/P3-4 背景声loop.mp3';
+  const audioFiles = {
+    [beepPath]: 500,
+    [p3_4Loop]: 10000,
+    [voice('p1.detect')]: 200,
+    [voice('p2.welcome')]: 200,
+    [voice('p3.count')]: 200,
+    [voice('p3.perfect')]: 200,
+    [voice('p4.meaning')]: 200,
+    [voice('p4.simulations')]: 200,
+    [voice('p4.record')]: 200,
+    [voice('P5.intro')]: 200,
+    [voice('P5.choose')]: 200
+  };
+  for (let i = 1; i <= 7; i++) audioFiles[voice(`p2.card${i}`)] = 200;
+
+  const h = harness(audioFiles);
+  await h.key('ArrowLeft');
+
+  // 走到 P3
+  await h.until(s => s.phase === 'P3');
+  const loopAudio = h.audios.find(a => a.path === p3_4Loop);
+  assert.ok(loopAudio && !loopAudio.paused, 'P3-4 loop audio should play during history');
+
+  const beepsBeforeHistory = h.audios.filter(a => a.path === beepPath).length;
+  // 等待直到前 7 行打完（第 8 行累计出现前）
+  await h.until(() => h.elements.get('.data').children.length === 7);
+  const beepsAfter7Lines = h.audios.filter(a => a.path === beepPath).length;
+  assert.equal(beepsAfter7Lines, beepsBeforeHistory, 'First 7 lines of history must produce NO beep');
+
+  // 第 8 行累计出现时，触发 1 次 beep
+  await h.until(() => h.elements.get('.data').children.length === 8);
+  const beepsAfter8thLine = h.audios.filter(a => a.path === beepPath).length;
+  assert.equal(beepsAfter8thLine, beepsBeforeHistory + 1, '8th total line must trigger beep');
+
+  // 到达第一题等待用户按键阶段
+  await reach(h, 'P5');
+  assert.equal(h.ctx.gameStatus().waiting, true);
+  const beepsBeforeChoice = h.audios.filter(a => a.path === beepPath).length;
+
+  // 用户按下有效按键 ArrowLeft，必须触发按键 beep 反馈
+  await h.key('ArrowLeft');
+  const beepsAfterChoice = h.audios.filter(a => a.path === beepPath).length;
+  assert.equal(beepsAfterChoice, beepsBeforeChoice + 1, 'Pressing valid button must trigger key beep feedback');
+});
+
+test('P4 to P7 audio transitions: ending+intro crossfade, cues, pain memory solo & silence, P7 ending before P8', async () => {
+  const p3_4Ending = '../assets/sfx/P3-4 背景声ending.mp3';
+  const p4_6Intro = '../assets/sfx/P4-6 背景声intro.mp3';
+  const p4_6Loop = '../assets/sfx/P4-6 背景声loop.mp3';
+  const asmrLoop = '../assets/sfx/P4-6 背景声ASMR loop.mp3';
+  const p5Cue = '../assets/sfx/P5 工作 提示音.mp3';
+  const p6Cue = '../assets/sfx/P6 婚姻 提示音.mp3';
+  const p7Pain = '../assets/sfx/P7 痛苦记忆.mp3';
+  const p7Cue = '../assets/sfx/P7 记忆 提示音.mp3';
+  const p4_6Ending = '../assets/sfx/P4-6 背景声ending.mp3';
+
+  const audioFiles = {
+    [p3_4Ending]: 3740,
+    [p4_6Intro]: 2060,
+    [p4_6Loop]: 17300,
+    [asmrLoop]: 36000,
+    [p5Cue]: 10180,
+    [p6Cue]: 8710,
+    [p7Pain]: 3240,
+    [p7Cue]: 9360,
+    [p4_6Ending]: 2930,
+    [voice('p1.detect')]: 100,
+    [voice('p2.welcome')]: 100,
+    [voice('p3.count')]: 100,
+    [voice('p3.perfect')]: 100,
+    [voice('p4.meaning')]: 100,
+    [voice('p4.simulations')]: 100,
+    [voice('p4.record')]: 100
+  };
+  for (let i = 1; i <= 7; i++) audioFiles[voice(`p2.card${i}`)] = 100;
+  for (const id of ['P5', 'P6', 'P7']) {
+    audioFiles[voice(`${id}.intro`)] = 100;
+    audioFiles[voice(`${id}.choose`)] = 100;
+    audioFiles[voice(`${id}.record`)] = 100;
+    audioFiles[voice(`${id}.left`)] = 100;
+  }
+
+  const h = harness(audioFiles);
+  await h.key('ArrowLeft');
+
+  // P4 播完后，第一题卡片出现前 1.8 秒，P3-4 ending 与 P4-6 intro 同步播放
+  await h.until(s => s.cueId === 'p4.record');
+  await h.until(() => h.audios.some(a => a.path === p3_4Ending));
+  const endingAudio = h.audios.find(a => a.path === p3_4Ending);
+  const p4_6IntroAudio = h.audios.find(a => a.path === p4_6Intro);
+  assert.ok(endingAudio && !endingAudio.paused, 'P3-4 ending should play before question 1');
+  assert.ok(p4_6IntroAudio && !p4_6IntroAudio.paused, 'P4-6 intro should play synchronously with ending');
+
+  // 进入 P5：P4-6 loop 与 ASMR loop 双轨同步启动，P5 工作 提示音播放
+  await reach(h, 'P5');
+  const loopBg = h.audios.find(a => a.path === p4_6Loop);
+  const asmrBg = h.audios.find(a => a.path === asmrLoop);
+  const p5CueAudio = h.audios.find(a => a.path === p5Cue);
+  assert.ok(loopBg && !loopBg.paused, 'P4-6 loop should be playing in P5');
+  assert.ok(asmrBg && !asmrBg.paused, 'P4-6 ASMR loop should be playing in P5');
+  assert.ok(p5CueAudio && !p5CueAudio.paused, 'P5 cue should play when P5 card appears');
+
+  // 第一题作答并进入 P6：播放 P6 提示音
+  await h.key('ArrowLeft');
+  await reach(h, 'P6');
+  const p6CueAudio = h.audios.find(a => a.path === p6Cue);
+  assert.ok(p6CueAudio && !p6CueAudio.paused, 'P6 cue should play when P6 card appears');
+
+  // 第二题作答并进入 P7
+  await h.key('ArrowLeft');
+  // 系统检测到高痛苦记忆：双轨背景全部停止，独奏 P7 痛苦记忆，其余全静音
+  await h.until(() => h.audios.some(a => a.path === p7Pain));
+  const painAudio = h.audios.find(a => a.path === p7Pain);
+  assert.ok(painAudio && !painAudio.paused, 'P7 pain memory sfx should play');
+  assert.equal(loopBg.paused, true, 'P4-6 loop must be silenced during pain memory');
+  assert.equal(asmrBg.paused, true, 'P4-6 ASMR loop must be silenced during pain memory');
+
+  // 随后的留白与题卡呈现：P7 卡片呈现后恢复双轨 loop 并播放 P7 记忆 提示音
+  await reach(h, 'P7');
+  const p7CueAudio = h.audios.find(a => a.path === p7Cue);
+  assert.ok(p7CueAudio && !p7CueAudio.paused, 'P7 cue should play when P7 card appears');
+  const loopResumed = h.audios.filter(a => a.path === p4_6Loop).pop();
+  const asmrResumed = h.audios.filter(a => a.path === asmrLoop).pop();
+  assert.ok(loopResumed && !loopResumed.paused, 'P4-6 loop should resume when P7 card appears');
+  assert.ok(asmrResumed && !asmrResumed.paused, 'P4-6 ASMR loop should resume when P7 card appears');
+
+  // 第三题作答后，进入 P8 评估前：播放 P4-6 背景声 ending，停止双轨背景 loop
+  await h.key('ArrowLeft');
+  await h.until(s => s.phase === 'P8');
+  assert.equal(loopResumed.paused, true, 'P4-6 loop must stop before P8 evaluation');
+  assert.equal(asmrResumed.paused, true, 'P4-6 ASMR loop must stop before P8 evaluation');
+  const p4_6EndingAudio = h.audios.find(a => a.path === p4_6Ending);
+  assert.ok(p4_6EndingAudio && !p4_6EndingAudio.paused, 'P4-6 ending sfx should play before P8');
 });

@@ -73,7 +73,7 @@ async function say(id, { el = sub, fallback, signal = run.signal } = {}) {
     type(el, text, Math.min(C.typeMs * C.speed, Math.max(0, duration - 350) / Math.max(1, text.length)));
   });
 }
-const sfx = (id, fallback = 0) => devMuted ? Promise.resolve() : media.play('sfx', id, fallback, run.signal);
+const sfx = (id, fallback = 0, volume) => devMuted ? Promise.resolve() : media.play('sfx', id, fallback, run.signal, null, volume);
 function background(id, volume) { if (!devMuted) media.backgroundTrack(id, run.signal, volume); }
 
 function choice(valid, timeout, promptAt, promptId) {
@@ -90,7 +90,13 @@ function choice(valid, timeout, promptAt, promptId) {
     };
     const finish = key => { if (settled) return; settled = true; clear(); resolve(key); };
     const abort = () => { if (settled) return; settled = true; clear(); reject(new Error('reset')); };
-    accept = key => { if (valid.includes(key)) { GameKeys.press(key); finish(key); } };
+    accept = key => {
+      if (valid.includes(key)) {
+        GameKeys.press(key);
+        sfx('beep').catch(ignoreReset);
+        finish(key);
+      }
+    };
     signal.addEventListener('abort', abort, { once: true });
     if (promptAt) wait(promptAt, hold.signal).then(() => {
       promptDone = say(promptId, { signal: promptController.signal }).catch(ignoreReset);
@@ -123,15 +129,30 @@ async function sceneP1(key, sid) {
 async function sceneP2(sid) {
   guard(sid);
   media.stopBackground();
-  background('evaluation');
+  if (!devMuted) {
+    if (media.path('sfx', 'p2.intro') || media.path('sfx', 'p2.loop') || media.path('bgm', 'p2.loop')) {
+      media.playChain({ intro: 'p2.intro', loop: 'p2.loop', volume: 0.25 }, run.signal);
+    } else {
+      background('evaluation');
+    }
+  }
   const video = document.querySelector('#video'), videoPath = media.path('video', 'intro');
   if (videoPath) { video.src = videoPath; video.loop = true; video.muted = true; video.play().catch(() => {}); }
   for (let i = 0; i < 7; i++) {
     guard(sid);
+    sfx('beep').catch(e => { if (e.message !== 'reset') console.error(e); });
     await view(`<div class="eyebrow">ARCHIVE / ${String(i + 1).padStart(2, '0')}</div><h2 id="narrative"></h2>`, 'P2');
     await say(`p2.card${i + 1}`, { el: document.querySelector('#narrative'), fallback: C.introDurations[i] });
   }
+  sfx('p2.ending', 0, 0.25).catch(e => { if (e.message !== 'reset') console.error(e); });
+  if (!devMuted) {
+    media.playChain({ intro: 'p3_4.intro', loop: 'p3_4.loop', volume: 0.25 }, run.signal);
+  }
+  await wait(1000);
+  guard(sid);
   await say('p2.welcome');
+  guard(sid);
+  sfx('p3.loading').catch(e => { if (e.message !== 'reset') console.error(e); });
 }
 async function sceneP4(sid) {
   guard(sid);
@@ -139,6 +160,12 @@ async function sceneP4(sid) {
   await say('p4.meaning'); await pause();
   await say('p4.simulations'); await pause();
   await say('p4.record');
+  sfx('p3_4.ending', 0, 0.25).catch(e => { if (e.message !== 'reset') console.error(e); });
+  if (!devMuted) {
+    media.playChain({ intro: 'p4_6.intro', loop: ['p4_6.loop', 'p4_6.asmr.loop'], volume: 0.25 }, run.signal);
+  }
+  await wait(1800);
+  guard(sid);
 }
 async function sceneP8(sid) {
   guard(sid);
@@ -168,11 +195,16 @@ async function history() {
   await view(heading('DECISION HISTORY', '过去 18 年，系统已代替你完成：') + '<div class="data"></div>', 'P3', true);
   stopVideo();
   if (video) { video.style.transition = ''; video.style.opacity = ''; }
+  if (!devMuted && !media.background && (media.path('sfx', 'p3_4.loop') || media.path('bgm', 'p3_4.loop'))) {
+    media.playChain({ loop: 'p3_4.loop', volume: 0.25 }, run.signal);
+  }
   for (const text of ['教育路径选择', '职业选择', '居住地选择', '健康决策', '社交关系优化', '伴侣匹配', '消费选择', '累计替代决策：11,204 次']) {
     const p = document.createElement('p');
-    if (text.startsWith('累计')) p.className = 'total';
+    const isTotal = text.startsWith('累计');
+    if (isTotal) p.className = 'total';
     document.querySelector('.data').append(p); type(p, text);
-    await Promise.all([sfx('beep'), wait(Math.max(650, text.length * C.typeMs))]);
+    const audioPromise = isTotal ? sfx('beep').catch(e => { if (e.message !== 'reset') console.error(e); }) : Promise.resolve();
+    await Promise.all([audioPromise, wait(Math.max(650, text.length * C.typeMs))]);
   }
   await say('p3.count'); await pause(); await say('p3.perfect');
   document.body.classList.remove('history');
@@ -183,10 +215,20 @@ async function question(i) {
   const white = [['不喜欢的工作', '收入较高', '成功概率 94%'], ['婚姻匹配度 91%', '预计持续 27 年'], ['删除记忆', '预计使未来情绪稳定度提升 22%']];
   const yellow = [['真正喜欢的工作', '收入较低', '成功概率 31%'], ['婚姻匹配度 52%', '预计持续 4 年', '但你爱这个人'], ['保留记忆']];
   const id = `P${5 + i}`;
-  if (i === 2) {
+  if (i === 0) {
+    sfx('p5.cue').catch(e => { if (e.message !== 'reset') console.error(e); });
+  } else if (i === 1) {
+    sfx('p6.cue').catch(e => { if (e.message !== 'reset') console.error(e); });
+  } else if (i === 2) {
     keys();
+    media.stopBackground();
     await view(heading('MEMORY DETECTED', '系统检测到一段高痛苦记忆。'), id);
+    await sfx('p7.pain').catch(e => { if (e.message !== 'reset') console.error(e); });
     for (let n = 0; n < (C.p7BlankBeats || 4); n++) await pause();
+    if (!devMuted) {
+      media.playChain({ loop: ['p4_6.loop', 'p4_6.asmr.loop'], volume: 0.25 }, run.signal);
+    }
+    sfx('p7.cue').catch(e => { if (e.message !== 'reset') console.error(e); });
   }
   await view(cards(`第${['一', '二', '三'][i]}题：${names[i]}`, white[i], yellow[i]), id);
   keys(['left', 'right']);
@@ -202,9 +244,16 @@ async function question(i) {
     await say(`${id}.record`);
     if (i === 1 && a === 'left') { await wait(2000); await say('P6.left'); }
     if (i === 1 && a === 'right') {
-      sub.textContent = ''; media.stopBackground(); await wait(3000); background('evaluation');
+      sub.textContent = ''; media.stopBackground(); await wait(3000);
+      if (!devMuted) {
+        media.playChain({ loop: ['p4_6.loop', 'p4_6.asmr.loop'], volume: 0.25 }, run.signal);
+      }
     }
     if (i === 2 && a === 'right') { await pause(); await say('P7.right'); }
+  }
+  if (i === 2) {
+    media.stopBackground();
+    sfx('p4_6.ending', 0, 0.25).catch(e => { if (e.message !== 'reset') console.error(e); });
   }
 }
 

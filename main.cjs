@@ -15,6 +15,15 @@ ipcMain.handle('assets:list', async () => {
  await walk('assets');
  return result;
 });
+ipcMain.handle('assets:read', async (_, relative) => {
+  try {
+    const cleanRel = String(relative || '').replace(/^\.\.\//, '');
+    const buf = await fs.readFile(path.join(__dirname, cleanRel));
+    return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+  } catch (e) {
+    return null;
+  }
+});
 const dev = process.argv.includes('--dev');
 const both = process.argv.includes('--both');
 

@@ -84,6 +84,25 @@ for (const id of Object.keys(GAME_DIALOGUE)) {
 for (const id of ['beep', 'thud', 'tick', 'ready', 'paper', 'confirm', 'stamp', 'switch']) {
   GAME_ASSETS.sfx[id] = `../assets/sfx/${id}.mp3`;
 }
+GAME_ASSETS.sfx['beep'] = '../assets/sfx/P2 七张档案卡.mp3';
 GAME_ASSETS.sfx['p1.start'] = '../assets/sfx/P1启动.mp3';
+GAME_ASSETS.sfx['p2.intro'] = '../assets/sfx/P2 背景声intro.mp3';
+GAME_ASSETS.bgm['p2.loop'] = '../assets/sfx/P2 背景声loop.mp3';
+GAME_ASSETS.sfx['p2.ending'] = '../assets/sfx/P2 背景声ending.mp3';
+GAME_ASSETS.sfx['p2_3.intro'] = '../assets/sfx/P3-4 用户你好背景声intro.mp3';
+GAME_ASSETS.sfx['p3_4.intro'] = '../assets/sfx/P3-4 用户你好背景声intro.mp3';
+GAME_ASSETS.sfx['p3.loading'] = '../assets/sfx/P3-4 Loading.mp3';
+GAME_ASSETS.bgm['p3_4.loop'] = '../assets/sfx/P3-4 背景声loop.mp3';
+GAME_ASSETS.sfx['p3_4.ending'] = '../assets/sfx/P3-4 背景声ending.mp3';
+GAME_ASSETS.sfx['p4_6.intro'] = '../assets/sfx/P4-6 背景声intro.mp3';
+GAME_ASSETS.bgm['p4_6.loop'] = '../assets/sfx/P4-6 背景声loop.mp3';
+GAME_ASSETS.bgm['p4_6.asmr.loop'] = '../assets/sfx/P4-6 背景声ASMR loop.mp3';
+GAME_ASSETS.sfx['p4_6.ending'] = '../assets/sfx/P4-6 背景声ending.mp3';
+GAME_ASSETS.sfx['p5.cue'] = '../assets/sfx/P5 工作 提示音.mp3';
+GAME_ASSETS.sfx['p6.cue'] = '../assets/sfx/P6 婚姻 提示音.mp3';
+GAME_ASSETS.sfx['p7.pain'] = '../assets/sfx/P7 痛苦记忆.mp3';
+GAME_ASSETS.sfx['p7.cue'] = '../assets/sfx/P7 记忆 提示音.mp3';
+GAME_ASSETS.sfx['p7.ending'] = '../assets/sfx/P4-6 背景声ending.mp3';
+
 for (const id of ['evaluation', 'guidance', 'certificate']) GAME_ASSETS.bgm[id] = `../assets/bgm/${id}.mp3`;
 GAME_ASSETS.bgm['standby'] = '../assets/sfx/P0待机持续.mp3';
