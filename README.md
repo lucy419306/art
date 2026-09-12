@@ -2,36 +2,29 @@
 
 纯本地 Electron 键盘交互游戏，依据《游戏脚本v1.1.md》实现。无需联网游玩。尚未放入正式配音和视频；当前为字幕、占位时长和轻微合成提示音。
 
-## 下载与运行
+## 在 Mac 运行
 
-### 方式一：下载游戏包（Releases）
-前往 Releases 页下载最新版本：https://github.com/lucy419306/art/releases
+直接双击 `dist/mac-arm64/最后一次选择.app` 即可运行（本机 Apple Silicon 版本，已实际验证启动与 F1 复位）。
 
-**macOS（Apple Silicon）**
-1. 下载 zip 后用访达双击解压（不要用第三方解压工具）；
-2. 首次打开若被系统拦下：右键点 App 选「打开」，或终端执行
-   `xattr -cr "最后一次选择.app"`；
-3. 按任意按钮开始，单局约 6–8 分钟。
-（Windows 安装包将在后续版本提供。）
-
-### 方式二：从源码运行（macOS / Windows 通用）
-需要 Node.js 18 或更高：
+需要运行修改后的源码时，在 Finder 双击 `启动游戏.command`。也可以打开终端：
 
 ```sh
+cd /Users/zhlmacbook/Documents/ChatGPT/art
 npm ci
 npm start
 ```
 
-macOS 也可双击 `启动游戏.command`；Windows 双击 `启动游戏.bat`。macOS 若把 F1 当亮度键，请按 Fn + F1；F11 同理。退出按 Command + Q。显示菜单也可切换全屏。
+本次已安装依赖，直接 `npm start` 即可。首次换电脑需要先安装 Node.js LTS，再 `npm ci`。macOS 若把 F1 当亮度键，请按 Fn + F1；F11 同理。退出按 Command + Q。显示菜单也可切换全屏。
 
-### 键盘按键（代替实体按钮）
-- 左选项：← 或 A
-- 右选项：→ 或 D
-- 手动接管：空格或 Enter
-- 场务复位：F1
-（实体 USB 按钮与以上按键完全等效。）
+| 操作 | 按键 |
+| --- | --- |
+| 左侧冷白方案 | ← 或 A |
+| 右侧暖黄方案 | → 或 D |
+| 第三颗白色接管按钮 | 空格或 Enter |
+| 随时复位 | F1 |
+| 切换全屏 | F11 |
 
-待机的“任意按钮”指上述三颗映射按钮。契约也用这三颗确认。长按产生的重复事件被忽略。开场不能跳过，所有翻页由流程自动完成。没有鼠标交互。切换全屏：F11。
+待机的“任意按钮”指上述三颗映射按钮。契约也用这三颗确认。长按产生的重复事件被忽略。开场不能跳过，所有翻页由流程自动完成。没有鼠标交互。
 
 ## 时间与分支
 
@@ -91,5 +84,3 @@ npm run build:win
 NSIS 安装程序输出到 `dist/`，包含 JS、CSS 和 assets。建议在 Windows 构建 Windows 安装包；本次未验证 Windows 实机运行。分发签名需之后单独配置。
 
 Electron 打包机制参考：[官方文档](https://www.electronjs.org/docs/latest/tutorial/application-distribution)。
-
-发布与版本约定见 RELEASING.md。
