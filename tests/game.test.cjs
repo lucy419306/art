@@ -73,10 +73,24 @@ test('P4 narration subtitle includes the missing 题 character', () => {
   assert.equal(voiceCues['p4.meaning'].transcript, expected);
   assert.equal(harness().ctx.GAME_DIALOGUE['p4.meaning'], expected);
 });
-test('main keeps subtitles visible through the configurable opacity interface', () => {
+test('main exposes the configurable subtitle opacity interface', () => {
   const css = fs.readFileSync('src/style.css', 'utf8');
-  assert.match(css, /:root\{--subtitle-opacity:1\}/);
-  assert.match(css, /#subtitle\{opacity:var\(--subtitle-opacity,1\)\}/);
+  assert.match(css, /--subtitle-opacity:\s*(?:0(?:\.\d+)?|1(?:\.0+)?)/);
+  assert.match(css, /#subtitle\s*\{[\s\S]*?opacity:\s*var\(--subtitle-opacity,\s*1\)/);
+});
+test('individual spoken lines can override the global subtitle opacity', () => {
+  const config = fs.readFileSync('src/config.js', 'utf8');
+  const game = fs.readFileSync('src/game.js', 'utf8');
+  assert.match(config, /subtitleOpacity:\s*\{/);
+  assert.match(game, /C\.subtitleOpacity\?\.\[id\]/);
+  assert.match(game, /Math\.min\(1, Math\.max\(0, Number\(lineOpacity\)\)\)/);
+  assert.match(game, /var\(--subtitle-opacity, 1\)/);
+});
+test('all spoken lines have a valid configured opacity', () => {
+  const h = harness();
+  assert.deepEqual(Object.keys(h.ctx.GAME_CONFIG.subtitleOpacity).sort(), Object.keys(h.ctx.GAME_DIALOGUE).sort());
+  assert.ok(Object.values(h.ctx.GAME_CONFIG.subtitleOpacity)
+    .every(value => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1));
 });
 test('P0 asks the participant to wear headphones and the notice flashes', async () => {
   const h = harness();
@@ -90,6 +104,11 @@ test('P6 first marriage choice lasts 70 years', () => {
   const source = fs.readFileSync('src/game.js', 'utf8');
   assert.match(source, /婚姻匹配度 91%', '预计持续 70 年/);
   assert.doesNotMatch(source, /预计持续 27 年/);
+});
+test('P7 choice cards explicitly refer to the painful memory', () => {
+  const source = fs.readFileSync('src/game.js', 'utf8');
+  assert.match(source, /\['删除痛苦记忆', '预计使未来情绪稳定度提升 22%'\]/);
+  assert.match(source, /\['保留痛苦记忆'\]/);
 });
 test('P5 regret result refers to the option rather than the choice', () => {
   const expected = '已记录。根据历史样本，该选项产生长期后悔的概率为 63%。';
@@ -239,6 +258,17 @@ test('standby accepts any of three keys; held keys cannot start; 1 cancels openi
   assert.match(h.elements.get('#keys').innerHTML, /黄键/);
   assert.doesNotMatch(h.elements.get('#keys').innerHTML, /红键/);
 });
+test('P0 prompt repeats three seconds after each playback and stops on start', async () => {
+  const prompt = voice('p0.prompt');
+  const h = harness({ [prompt]: 1000 });
+  await h.flush();
+  assert.equal(h.ctx.GAME_CONFIG.standbyPromptInterval, 3000);
+  assert.equal(h.audios.filter(audio => audio.path === prompt).length, 1);
+  await h.until(() => h.audios.filter(audio => audio.path === prompt).length === 2);
+  assert.equal(h.now, 4000);
+  await h.key('ArrowLeft');
+  assert.ok(h.audios.filter(audio => audio.path === prompt).every(audio => audio.paused));
+});
 test('9 enters fullscreen and 0 exits; held keys do not retrigger either action', async () => {
   const h = harness();
   await h.key('Digit9'); await h.key('Digit9', true); await h.key('Digit0');
@@ -310,14 +340,12 @@ test('voice starts subtitle reveal and finishes it 0-2 seconds before audio ends
   assert.ok(finishAt <= duration);
   assert.ok(finishAt >= duration - 2000);
 });
-test('a pending recording still shows its extraction-table subtitle through the reserved cue', async () => {
-  const h = harness();
-  await h.key('ArrowLeft'); await reach(h, 'P5'); await h.key('ArrowLeft');
-  await reach(h, 'P6'); await h.key('ArrowLeft');
-  await h.until(s => s.cueId === 'P6.left');
-  const subtitle = h.elements.get('#subtitle').innerHTML.replace(/<[^>]+>/g, '');
-  assert.equal(subtitle, '该匹配由系统预先安排。');
-  assert.equal(h.audios.some(audio => audio.path === voice('P6.left')), false);
+test('P6 white choice has no prearranged-match voice or subtitle', () => {
+  const dialogue = harness().ctx.GAME_DIALOGUE;
+  const game = fs.readFileSync('src/game.js', 'utf8');
+  assert.equal(dialogue['P6.left'], undefined);
+  assert.equal(voiceCues['P6.left'], undefined);
+  assert.doesNotMatch(game, /P6\.left|该匹配由系统预先安排/);
 });
 test('developer speed changes timers but never changes voice, sfx, or background playback rate', async () => {
   const h = harness({ [voice('P5.choose')]: 8000, '../assets/bgm/evaluation.mp3': 60000 });
@@ -332,12 +360,10 @@ test('voice manifest has no unexpected missing required cues', () => {
     .filter(([, cue]) => !fs.existsSync(require('node:path').resolve(__dirname, '../src', cue.file)))
     .map(([id]) => id)
     .sort();
-  const pending = new Set(['P6.left', 'b.pain', 'c.pain']);
+  const pending = new Set(['b.pain', 'c.pain']);
   assert.ok(missing.every(id => pending.has(id)), `unexpected missing cues: ${missing.join(', ')}`);
 });
 test('supplemental recordings keep their source files and receive per-cue level matching', () => {
-  assert.equal(voiceCues['P6.left'].file, '../assets/voice/evaluation/该匹配由系统预先安排。.mp3');
-  assert.equal(voiceCues['P6.left'].volume, 0.72);
   assert.equal(voiceCues['b.pain'].file, '../assets/voice/evaluation/系统将不再替你删除所有痛苦。.mp3');
   assert.equal(voiceCues['b.pain'].volume, 0.84);
   assert.equal(voiceCues['c.pain'].volume, 0.84);

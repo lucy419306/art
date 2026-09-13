@@ -76,6 +76,11 @@ async function say(id, { el = sub, fallback, signal = run.signal, onStart } = {}
   if (dialogue === undefined) throw new Error(`缺少台词：${id}`);
   const cue = window.GAME_VOICE_CUES?.[id];
   const text = cue?.transcript ?? dialogue;
+  const lineOpacity = C.subtitleOpacity?.[id];
+  const opacity = lineOpacity === undefined
+    ? (el === sub ? 'var(--subtitle-opacity, 1)' : '')
+    : String(Math.min(1, Math.max(0, Number(lineOpacity))));
+  el.style.setProperty('opacity', opacity);
   cueId = id;
   const fallbackMs = fallback ?? fallbackFor(text);
   if (devMuted) { onStart?.(fallbackMs); type(el, text); await media.delay(fallbackMs, signal); return; }
@@ -260,8 +265,8 @@ async function history() {
 
 async function question(i) {
   const names = ['工作', '婚姻', '记忆'];
-  const white = [['不喜欢的工作', '收入较高', '成功概率 94%'], ['婚姻匹配度 91%', '预计持续 70 年'], ['删除记忆', '预计使未来情绪稳定度提升 22%']];
-  const yellow = [['真正喜欢的工作', '收入较低', '成功概率 31%'], ['婚姻匹配度 52%', '预计持续 4 年', '但你爱这个人'], ['保留记忆']];
+  const white = [['不喜欢的工作', '收入较高', '成功概率 94%'], ['婚姻匹配度 91%', '预计持续 70 年'], ['删除痛苦记忆', '预计使未来情绪稳定度提升 22%']];
+  const yellow = [['真正喜欢的工作', '收入较低', '成功概率 31%'], ['婚姻匹配度 52%', '预计持续 4 年', '但你爱这个人'], ['保留痛苦记忆']];
   const id = `P${5 + i}`;
   if (i === 0) {
     sfx('p5.cue').catch(e => { if (e.message !== 'reset') console.error(e); });
@@ -291,7 +296,6 @@ async function question(i) {
     await Promise.all([a === 'right' ? sfx('thud') : Promise.resolve(), say(`${id}.${a}`)]);
   } else {
     await say(`${id}.record`);
-    if (i === 1 && a === 'left') { await wait(2000); await say('P6.left'); }
     if (i === 1 && a === 'right') {
       sub.textContent = ''; media.stopBackground(); await wait(3000);
       if (!devMuted) {
@@ -654,10 +658,12 @@ function enterBeat(id, preset) {
     const signal = run.signal;
     launch(async () => {
       if (id === 'P12' && media.path('voice', 'p12.reset')) await say('p12.reset', { signal });
-      guard(sid);
-      if (media.path('voice', 'p0.prompt')) await say('p0.prompt', { signal });
-      guard(sid);
-      sub.textContent = '';
+      while (live(sid)) {
+        if (media.path('voice', 'p0.prompt')) await say('p0.prompt', { signal });
+        guard(sid);
+        sub.textContent = '';
+        await wait(C.standbyPromptInterval, signal);
+      }
     });
     return;
   }

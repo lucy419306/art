@@ -22,7 +22,6 @@ window.GAME_DIALOGUE = {
   'P6.intro': '第二个问题：婚姻。',
   'P6.choose': '请选择。',
   'P6.record': '已记录。',
-  'P6.left': '该匹配由系统预先安排。',
   'P7.intro': '第三个问题：记忆。',
   'P7.choose': '白键删除记忆，黄键保留记忆。请选择。',
   'P7.record': '已记录。',
