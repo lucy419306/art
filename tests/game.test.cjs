@@ -365,8 +365,8 @@ test('voice manifest has no unexpected missing required cues', () => {
 });
 test('supplemental recordings keep their source files and receive per-cue level matching', () => {
   assert.equal(voiceCues['b.pain'].file, '../assets/voice/evaluation/系统将不再替你删除所有痛苦。.mp3');
-  assert.equal(voiceCues['b.pain'].volume, 0.84);
-  assert.equal(voiceCues['c.pain'].volume, 0.84);
+  assert.equal(voiceCues['b.pain'].volume, 0.756);
+  assert.equal(voiceCues['c.pain'].volume, 0.756);
 });
 test('long reminder finishes before automatic choice; manual choice interrupts it immediately', async () => {
   for (const manual of [false, true]) {
