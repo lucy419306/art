@@ -19,6 +19,7 @@ body { cursor: auto; }
 #web-reset { border-color: #60767b !important; color: #b4c3c7 !important; }
 @media (max-width: 700px) {
   .frame { padding: 22px 4vw 88px; }
+  #keys { visibility: hidden; }
   #web-controls { width: calc(100% - 20px); justify-content: center; gap: 5px; }
   .web-controls-label { display: none; }
   #web-controls button { flex: 1; min-width: 0; padding: 8px 4px; }
