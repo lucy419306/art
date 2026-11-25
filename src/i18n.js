@@ -1,6 +1,6 @@
 /* English display text only. Audio IDs, files, volume and timing stay shared. */
 (function (root) {
-  const enabled = new URLSearchParams(root.location.search).get('lang') === 'en';
+  const enabled = false;
   const lines = {
     'p0.prompt': 'Please take a seat. Press any button to begin.',
     'p1.detect': 'Applicant detected.',

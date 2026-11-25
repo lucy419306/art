@@ -4,40 +4,53 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#070a0d">
-  <meta name="description" content="《人类自主权恢复中心》中文版互动体验：在系统接管人生的未来，重新申请自己的选择权。">
-  <title>人类自主权恢复中心｜中文版互动体验</title>
+  <meta name="description" content="选择中文原版或英文字幕版，进入《人类自主权恢复中心》互动体验。">
+  <title>选择语言 / Choose a language · 人类自主权恢复中心</title>
   <style>
-    :root { color-scheme: dark; font-family: 'PingFang SC','Microsoft YaHei',sans-serif; }
+    :root { color-scheme: dark; font-family: 'PingFang SC','Microsoft YaHei',Arial,sans-serif; }
     * { box-sizing: border-box; }
-    body { margin: 0; min-height: 100svh; color: #e5eced; background: radial-gradient(ellipse at 50% 43%,#1a3038 0%,#0b151a 36%,#070a0d 75%); }
-    body:before { content: ''; position: fixed; inset: 0; pointer-events: none; opacity: .13; background: repeating-linear-gradient(0deg,transparent 0 3px,#738b91 4px); }
-    .shell { width: min(100% - 40px, 1080px); min-height: 100svh; margin: auto; display: flex; flex-direction: column; position: relative; }
-    header, footer { display: flex; justify-content: space-between; gap: 20px; padding: 26px 0; color: #91aab2; font-size: 14px; letter-spacing: .18em; }
-    header { border-bottom: 1px solid #34474e; }
-    footer { border-top: 1px solid #34474e; line-height: 1.7; }
-    main { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 68px 0; max-width: 800px; }
-    .eyebrow { color: #9fbec6; font: 14px monospace; letter-spacing: .22em; }
-    h1 { font-size: clamp(42px,7.8vw,92px); font-weight: 300; letter-spacing: .09em; line-height: 1.2; margin: 30px 0; }
-    .lead { font-size: clamp(19px,2.2vw,26px); line-height: 1.8; color: #c4d2d6; max-width: 680px; margin: 0 0 34px; }
-    .detail { font-size: 16px; line-height: 1.8; color: #98afb6; max-width: 660px; margin: 0 0 42px; }
-    .start { display: inline-flex; width: fit-content; min-height: 56px; align-items: center; justify-content: center; padding: 12px 32px; border: 1px solid #b9d9e3; border-radius: 4px; background: #dbeaf0; color: #102028; font-size: 17px; text-decoration: none; letter-spacing: .12em; }
-    .start:hover, .start:focus-visible { background: #fff; }
-    .note { margin-top: 18px; font-size: 14px; line-height: 1.6; color: #9ab0b7; }
-    @media (max-width: 650px) { header,footer { flex-direction: column; gap: 6px; } main { padding: 55px 0; } }
+    body { margin: 0; min-height: 100svh; color: #e5eced; background: radial-gradient(ellipse at 50% 40%,#1a3038 0%,#0b151a 38%,#070a0d 78%); }
+    body:before { content: ''; position: fixed; inset: 0; pointer-events: none; opacity: .12; background: repeating-linear-gradient(0deg,transparent 0 3px,#738b91 4px); }
+    .shell { width: min(100% - 40px, 1040px); min-height: 100svh; margin: auto; display: flex; flex-direction: column; position: relative; }
+    header, footer { display: flex; justify-content: space-between; gap: 16px; padding: 25px 0; color: #91aab2; font-size: 14px; letter-spacing: .12em; line-height: 1.5; }
+    header { border-bottom: 1px solid #34474e; } footer { border-top: 1px solid #34474e; }
+    main { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 62px 0; }
+    .eyebrow { color: #9fbec6; font: 14px monospace; letter-spacing: .18em; }
+    h1 { font-size: clamp(40px,6.5vw,72px); font-weight: 300; letter-spacing: .05em; line-height: 1.2; margin: 24px 0 14px; }
+    .intro { font-size: clamp(17px,2vw,21px); line-height: 1.7; color: #b6c9ce; margin: 0 0 42px; }
+    .choices { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px; }
+    .choice { display: flex; flex-direction: column; min-height: 260px; padding: 32px; border: 1px solid #59717a; border-radius: 5px; background: #0d1b20d9; color: #e9f1f3; text-decoration: none; transition: border-color .2s,background .2s,transform .2s; }
+    .choice:hover, .choice:focus-visible { border-color: #c9e4ec; background: #172b32; transform: translateY(-3px); outline: none; }
+    .choice small { font: 14px monospace; letter-spacing: .14em; color: #9eb9c0; }
+    .choice strong { display: block; margin: 26px 0 14px; font-size: clamp(28px,3.5vw,42px); font-weight: 400; letter-spacing: .04em; }
+    .choice span { color: #b8cbd0; font-size: 16px; line-height: 1.65; }
+    .choice em { display: block; margin-top: auto; padding-top: 26px; color: #ecf7fa; font-size: 16px; font-style: normal; }
+    @media (max-width: 700px) { header,footer { flex-direction: column; gap: 4px; } main { padding: 48px 0; } .intro { margin-bottom: 28px; } .choices { grid-template-columns: 1fr; } .choice { min-height: 205px; padding: 24px; } .choice strong { margin: 16px 0 10px; } }
   </style>
 </head>
 <body>
   <div class="shell">
-    <header><span>人类自主权恢复中心</span><span>评估室 07</span></header>
+    <header><span>人类自主权恢复中心</span><span>HUMAN AUTONOMY RESTORATION CENTER</span></header>
     <main>
-      <div class="eyebrow">CHINESE ORIGINAL · INTERACTIVE EXPERIENCE</div>
-      <h1>你的人生，<br>由谁决定？</h1>
-      <p class="lead">在系统替人类做决定的未来，你申请取回自己的选择权。三次模拟决策，将决定申请的去向。</p>
-      <p class="detail">这是作品的原始中文版，可直接在浏览器中体验。请佩戴耳机；演出包含语音、音效与需要你亲自作答的选择。</p>
-      <a class="start" href="src/">进入评估室</a>
-      <div class="note">电脑可使用方向键、A / D、空格键；手机与平板可点击画面下方按钮。</div>
+      <div class="eyebrow">ASSESSMENT ROOM 07 / 评估室 07</div>
+      <h1>选择体验语言<br><span lang="en">Choose your language</span></h1>
+      <p class="intro">请选择一个版本开始体验。<br><span lang="en">Select a version to begin the experience.</span></p>
+      <div class="choices">
+        <a class="choice" href="src/index.html" lang="zh-CN">
+          <small>ORIGINAL VERSION / 原版</small>
+          <strong>中文</strong>
+          <span>中文界面与原始中文配音。</span>
+          <em>进入中文版</em>
+        </a>
+        <a class="choice" href="https://lucy419306.github.io/art-en/src/index.html" lang="en">
+          <small>ENGLISH SUBTITLES</small>
+          <strong>English</strong>
+          <span>English interface and subtitles with the original Chinese voice performance.</span>
+          <em>Enter English version</em>
+        </a>
+      </div>
     </main>
-    <footer><span>自主决策能力评估</span><span>完成体验后可用「重来」重新开始</span></footer>
+    <footer><span>请佩戴耳机 / Please wear headphones</span><span>电脑键盘或屏幕按钮均可操作 / Keyboard or on-screen controls</span></footer>
   </div>
 </body>
 </html>
