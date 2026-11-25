@@ -1,0 +1,1 @@
+(function(root){const rules={passes:answers=>answers.length===3&&answers.every(a=>a==='left'),key:code=>({ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',Space:'third',Enter:'third'}[code]||null)};if(typeof module!=='undefined')module.exports=rules;else root.GameRules=rules;})(globalThis);

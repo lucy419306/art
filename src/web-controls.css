@@ -1,0 +1,29 @@
+body { cursor: auto; }
+#web-controls {
+  position: fixed; z-index: 30; left: 50%; bottom: max(12px, env(safe-area-inset-bottom));
+  transform: translateX(-50%); display: flex; align-items: center; gap: 8px;
+  padding: 9px; border: 1px solid #57717a; border-radius: 12px;
+  background: #071015e8; box-shadow: 0 8px 28px #0009;
+  color: #d8e6ee; font: 14px 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+.web-controls-label { padding: 0 8px; white-space: nowrap; color: #a9bdc4; }
+#web-controls button {
+  min-width: 66px; min-height: 42px; padding: 8px 12px; border-radius: 7px;
+  border: 1px solid #b9d3de; background: #17252b; color: #edf6f8;
+  font: inherit; cursor: pointer;
+}
+#web-controls button[data-choice="right"] { border-color: #d5a75c; color: #f6d8a2; }
+#web-controls button[data-choice="third"] { border-color: #d5655e; color: #f4aaa5; }
+#web-controls button:disabled { opacity: .38; cursor: default; }
+#web-controls button:not(:disabled):hover, #web-controls button:not(:disabled):focus-visible { background: #30434a; }
+#web-reset { border-color: #60767b !important; color: #b4c3c7 !important; }
+@media (max-width: 700px) {
+  .frame { padding: 22px 4vw 88px; }
+  #web-controls { width: calc(100% - 20px); justify-content: center; gap: 5px; }
+  .web-controls-label { display: none; }
+  #web-controls button { flex: 1; min-width: 0; padding: 8px 4px; }
+  .rail { display: none; }
+  h1 { font-size: clamp(24px, 6vw, 36px); letter-spacing: 3px; }
+  h2 { font-size: 21px; letter-spacing: 2px; }
+  .choices { gap: 10px; }
+}
